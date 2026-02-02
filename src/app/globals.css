@@ -1,3 +1,5 @@
+/* Updated: 1769852230430 */
+/* Updated: 1769517852112 */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -118,5 +120,22 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Fix mobile scroll/zoom issues */
+html, body {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+input, select, textarea {
+  font-size: 16px !important; /* Prevents iOS zoom on focus */
+}
+
+/* Prevent layout shift on mobile */
+@media (max-width: 640px) {
+  .container {
+    overflow-x: hidden;
   }
 }
