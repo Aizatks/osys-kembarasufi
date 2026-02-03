@@ -1,27 +1,26 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const owner_id = searchParams.get("owner_id");
     const manager_id = searchParams.get("manager_id");
 
-    let query = supabase.from("workspaces").select(`
+    let query = supabaseAdmin.from("workspaces").select(`
       *,
       workspace_items (*)
     `);
 
-    if (owner_id) {
+    // Non-admin users can only see their own workspaces
+    if (!['admin', 'superadmin'].includes(user.role)) {
+      query = query.eq("owner_staff_id", user.userId);
+    } else if (owner_id) {
       query = query.eq("owner_staff_id", owner_id);
     } else if (manager_id) {
       // Fetch staff under this manager
-      const { data: staff } = await supabase
+      const { data: staff } = await supabaseAdmin
         .from("staff")
         .select("id")
         .eq("manager_id", manager_id);
@@ -38,16 +37,21 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { workspace_id, owner_staff_id, name, type, item_type, title, url, folder_path, tags } = body;
 
     // If no workspace_id but owner_staff_id is provided, create a NEW workspace
     if (!workspace_id && owner_staff_id) {
-      const { data, error } = await supabase
+      // Users can only create workspaces for themselves (unless admin)
+      if (owner_staff_id !== user.userId && !['admin', 'superadmin'].includes(user.role)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+
+      const { data, error } = await supabaseAdmin
         .from("workspaces")
         .insert([{ owner_staff_id, name, type }])
         .select()
@@ -58,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     // Otherwise, add an item to an existing workspace
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("workspace_items")
       .insert([{ workspace_id, item_type, title, url, folder_path, tags }])
       .select()
@@ -69,16 +73,16 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: Request) {
+export const PATCH = withAuth(async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { id, title, url, folder_path, tags, old_folder_path, new_folder_path, workspace_id } = body;
 
     // Bulk update folder name
     if (old_folder_path && new_folder_path && workspace_id) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("workspace_items")
         .update({ folder_path: new_folder_path })
         .eq("workspace_id", workspace_id)
@@ -90,7 +94,7 @@ export async function PATCH(req: Request) {
     }
 
     // Single item update
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("workspace_items")
       .update({ title, url, folder_path, tags })
       .eq("id", id)
@@ -102,14 +106,14 @@ export async function PATCH(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(req: Request) {
+export const DELETE = withAuth(async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("workspace_items")
       .delete()
       .eq("id", id);
@@ -120,4 +124,4 @@ export async function DELETE(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

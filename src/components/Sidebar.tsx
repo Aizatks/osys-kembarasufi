@@ -52,6 +52,7 @@ import {
   | "settings"
   | "whatsapp"
   | "hr-attendance"
+  | "hr-attendance-settings"
   | "hr-memos"
   | "hr-claims"
   | "hr-staff-docs"
@@ -429,10 +430,11 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                           </div>
                           {isHROpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                         </button>
-                        {isHROpen && (
-                          <div className="ml-4 pl-4 border-l border-slate-700 space-y-1">
-                            {canSeeHR && <SubMenuItem view="hr-attendance" icon={Clock} label="Attendance" colorClass="blue" />}
-                            {canSeeMemos && <SubMenuItem view="hr-memos" icon={FileText} label="Memo" colorClass="blue" />}
+                          {isHROpen && (
+                            <div className="ml-4 pl-4 border-l border-slate-700 space-y-1">
+                              {canSeeHR && <SubMenuItem view="hr-attendance" icon={Clock} label="Attendance" colorClass="blue" />}
+                              {isAdmin && <SubMenuItem view="hr-attendance-settings" icon={Settings} label="Tetapan Kehadiran" colorClass="blue" />}
+                              {canSeeMemos && <SubMenuItem view="hr-memos" icon={FileText} label="Memo" colorClass="blue" />}
                             {canSeeClaims && <SubMenuItem view="hr-claims" icon={Wallet} label="Claim" colorClass="blue" />}
                             {canSeeStaffDocs && <SubMenuItem view="hr-staff-docs" icon={FileText} label="Dokumen Staff" colorClass="blue" />}
                             {canSeePayroll && <SubMenuItem view="hr-payroll" icon={Banknote} label="Payroll" colorClass="blue" />}

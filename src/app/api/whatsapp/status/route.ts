@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { whatsappManager } from '@/lib/whatsapp-service';
+import { withAuth } from '@/lib/api-auth';
 import QRCode from 'qrcode';
 
-export async function GET(request: Request) {
+export const GET = withAuth(async (request: NextRequest, user) => {
   const { searchParams } = new URL(request.url);
   const staffId = searchParams.get('staffId');
 
   if (!staffId) {
     return NextResponse.json({ error: 'Staff ID is required' }, { status: 400 });
+  }
+
+  // Verify user can only check their own status (unless admin)
+  if (staffId !== user.userId && !['admin', 'superadmin'].includes(user.role)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
   const status = await whatsappManager.getStatus(staffId);
@@ -28,4 +34,4 @@ export async function GET(request: Request) {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     },
   });
-}
+});

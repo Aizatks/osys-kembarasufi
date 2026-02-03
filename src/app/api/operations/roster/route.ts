@@ -1,14 +1,10 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth, withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
-    const { data: roster, error } = await supabase
+    const { data: roster, error } = await supabaseAdmin
       .from("operations_roster")
       .select(`
         *,
@@ -23,16 +19,16 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { action } = body;
 
     if (action === "GENERATE_ROSTER") {
       // 1. Fetch upcoming trip dates
-      const { data: trips } = await supabase
+      const { data: trips } = await supabaseAdmin
         .from("trip_dates")
         .select("*")
         .gte("depart_date", new Date().toISOString().split("T")[0])
@@ -41,7 +37,7 @@ export async function POST(req: Request) {
       if (!trips || trips.length === 0) return NextResponse.json({ message: "No upcoming trips" });
 
       // 2. Fetch available staff with 'Operation' role or specific skills
-      const { data: staff } = await supabase
+      const { data: staff } = await supabaseAdmin
         .from("staff")
         .select("*")
         .eq("role", "Operation");
@@ -68,7 +64,7 @@ export async function POST(req: Request) {
           });
 
           // Also create a calendar event
-          await supabase.from("calendar_events").insert([{
+          await supabaseAdmin.from("calendar_events").insert([{
             staff_id: assignedStaff.id,
             title: `Airport Duty: Trip ID ${trip.id}`,
             start_at: `${trip.depart_date}T06:00:00Z`, // Early morning duty
@@ -79,7 +75,7 @@ export async function POST(req: Request) {
         }
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from("operations_roster")
         .insert(newRoster)
         .select();
@@ -93,4 +89,4 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

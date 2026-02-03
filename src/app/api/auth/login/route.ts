@@ -3,9 +3,32 @@ import { cookies } from 'next/headers';
 import { supabase } from '@/lib/supabase';
 import { verifyPassword, generateToken } from '@/lib/auth';
 import { logActivity } from '@/lib/activity-logger';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting by IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+    
+    const rateLimitResult = checkRateLimit(`login:${ip}`, RATE_LIMITS.login);
+    
+    if (!rateLimitResult.allowed) {
+      const retryAfter = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: 'Terlalu banyak percubaan log masuk. Sila cuba lagi kemudian.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimitResult.resetTime.toString()
+          }
+        }
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -63,7 +86,7 @@ export async function POST(request: NextRequest) {
       .update({ last_login: new Date().toISOString() })
       .eq('id', staff.id);
 
-    const token = generateToken({
+    const token = await generateToken({
       userId: staff.id,
       email: staff.email,
       name: staff.name,

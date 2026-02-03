@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { hashPassword, generateToken } from '@/lib/auth';
+import { isValidEmail, sanitizeString, isStrongPassword } from '@/lib/validation';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting by IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+    
+    const rateLimitResult = checkRateLimit(`register:${ip}`, RATE_LIMITS.login);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak percubaan pendaftaran. Sila cuba lagi kemudian.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { name, email, password, role = 'staff' } = body;
 
@@ -14,9 +30,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length < 6) {
+    // Validate email format
+    if (!isValidEmail(email)) {
       return NextResponse.json(
-        { error: 'Kata laluan mestilah sekurang-kurangnya 6 aksara' },
+        { error: 'Format email tidak sah' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password strength
+    const passwordCheck = isStrongPassword(password);
+    if (!passwordCheck.valid) {
+      return NextResponse.json(
+        { error: passwordCheck.errors.join('. ') },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize name input
+    const sanitizedName = sanitizeString(name);
+    if (sanitizedName.length < 2 || sanitizedName.length > 100) {
+      return NextResponse.json(
+        { error: 'Nama mesti antara 2-100 aksara' },
         { status: 400 }
       );
     }
@@ -45,8 +80,8 @@ export async function POST(request: NextRequest) {
     const { data: newStaff, error } = await supabase
       .from('staff')
       .insert({
-        name,
-        email: email.toLowerCase(),
+        name: sanitizedName,
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
         role: isFirstUser ? 'superadmin' : role,
         status: isFirstUser ? 'approved' : 'pending',
@@ -59,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
     }
 
-    const token = generateToken({
+    const token = await generateToken({
       userId: newStaff.id,
       email: newStaff.email,
       name: newStaff.name,

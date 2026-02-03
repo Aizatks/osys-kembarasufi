@@ -1,22 +1,21 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth, withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const staff_id = searchParams.get("staff_id");
 
-    let query = supabase
+    let query = supabaseAdmin
       .from("hr_staff_documents")
       .select("*")
       .order("issued_at", { ascending: false });
 
-    if (staff_id) {
+    // Staff can only see their own documents, admin can see all
+    if (!['admin', 'superadmin'].includes(user.role)) {
+      query = query.eq("staff_id", user.userId);
+    } else if (staff_id) {
       query = query.eq("staff_id", staff_id);
     }
 
@@ -28,14 +27,14 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { staff_id, doc_type, title, file_url, issued_at, tags } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("hr_staff_documents")
       .insert([{ staff_id, doc_type, title, file_url, issued_at, tags }])
       .select()
@@ -47,14 +46,14 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(req: Request) {
+export const DELETE = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("hr_staff_documents")
       .delete()
       .eq("id", id);
@@ -65,4 +64,4 @@ export async function DELETE(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

@@ -1,17 +1,13 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
 
-    let query = supabase
+    let query = supabaseAdmin
       .from("hr_recruitment")
       .select("*")
       .order("created_at", { ascending: false });
@@ -28,9 +24,9 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { 
@@ -43,7 +39,7 @@ export async function POST(req: Request) {
       status 
     } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("hr_recruitment")
       .insert([{ 
         full_name, 
@@ -63,14 +59,14 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: Request) {
+export const PATCH = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { id, status, notes, interview_date } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("hr_recruitment")
       .update({ status, notes, interview_date })
       .eq("id", id)
@@ -83,4 +79,4 @@ export async function PATCH(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

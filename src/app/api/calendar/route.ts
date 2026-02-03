@@ -1,26 +1,26 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth, withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const staff_id = searchParams.get("staff_id");
     const start = searchParams.get("start");
     const end = searchParams.get("end");
 
-    let query = supabase
+    let query = supabaseAdmin
       .from("calendar_events")
       .select("*")
       .order("start_at", { ascending: true });
 
-    if (staff_id) {
+    // Staff can only see their own events, admin can see all
+    if (!['admin', 'superadmin'].includes(user.role)) {
+      query = query.eq("staff_id", user.userId);
+    } else if (staff_id) {
       query = query.eq("staff_id", staff_id);
     }
+    
     if (start && end) {
       query = query.gte("start_at", start).lte("end_at", end);
     }
@@ -33,14 +33,19 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { staff_id, title, start_at, end_at, type, metadata } = body;
 
-    const { data, error } = await supabase
+    // Users can only create events for themselves (unless admin)
+    if (staff_id !== user.userId && !['admin', 'superadmin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const { data, error } = await supabaseAdmin
       .from("calendar_events")
       .insert([{ staff_id, title, start_at, end_at, type, metadata }])
       .select()
@@ -49,7 +54,7 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     // Create notification record
-    await supabase.from("notifications").insert([{
+    await supabaseAdmin.from("notifications").insert([{
       staff_id,
       channel: "IN_APP",
       message: `Event baru: ${title} pada ${new Date(start_at).toLocaleDateString()}`,
@@ -61,14 +66,25 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(req: Request) {
+export const DELETE = withAuth(async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    const { error } = await supabase
+    // Check ownership
+    const { data: event } = await supabaseAdmin
+      .from("calendar_events")
+      .select("staff_id")
+      .eq("id", id)
+      .single();
+
+    if (event && event.staff_id !== user.userId && !['admin', 'superadmin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const { error } = await supabaseAdmin
       .from("calendar_events")
       .delete()
       .eq("id", id);
@@ -79,4 +95,4 @@ export async function DELETE(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

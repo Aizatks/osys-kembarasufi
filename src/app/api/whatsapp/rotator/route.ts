@@ -1,14 +1,10 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth, withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
-    const { data: rotators, error } = await supabase
+    const { data: rotators, error } = await supabaseAdmin
       .from("whatsapp_rotators")
       .select(`
         *,
@@ -22,14 +18,14 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { name, slug, logic, pixel_id, tiktok_pixel_id } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("whatsapp_rotators")
       .insert([{ name, slug, logic, pixel_id, tiktok_pixel_id }])
       .select()
@@ -41,17 +37,17 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: Request) {
+export const PATCH = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { id, numbers } = body;
 
     // Delete existing numbers and insert new ones
-    await supabase.from("whatsapp_rotator_numbers").delete().eq("rotator_id", id);
+    await supabaseAdmin.from("whatsapp_rotator_numbers").delete().eq("rotator_id", id);
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("whatsapp_rotator_numbers")
       .insert(numbers.map((n: any) => ({ ...n, rotator_id: id })))
       .select();
@@ -62,4 +58,4 @@ export async function PATCH(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

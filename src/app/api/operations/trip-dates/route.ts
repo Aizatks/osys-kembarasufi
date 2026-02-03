@@ -1,20 +1,15 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth, withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const ALLOWED_ROLES: string[] = ['tour-coordinator', 'tour-coordinator-manager', 'superadmin', 'admin'];
 
-const ALLOWED_ROLES = ['tour-coordinator', 'tour-coordinator-manager', 'superadmin'];
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const package_id = searchParams.get("package_id");
 
-    let query = supabase
+    let query = supabaseAdmin
       .from("trip_dates")
       .select("*")
       .order("depart_date", { ascending: true });
@@ -31,16 +26,12 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withAuth(async (req: NextRequest, user) => {
   try {
-    const authHeader = req.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader);
-    const payload = token ? verifyToken(token) : null;
-
-    if (!payload || !ALLOWED_ROLES.includes(payload.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ALLOWED_ROLES.includes(user.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -54,7 +45,7 @@ export async function POST(req: Request) {
       surcharge_override 
     } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("trip_dates")
       .insert([{ 
         package_id, 
@@ -75,16 +66,12 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: Request) {
+export const PATCH = withAuth(async (req: NextRequest, user) => {
   try {
-    const authHeader = req.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader);
-    const payload = token ? verifyToken(token) : null;
-
-    if (!payload || !ALLOWED_ROLES.includes(payload.role)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ALLOWED_ROLES.includes(user.role)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -98,7 +85,7 @@ export async function PATCH(req: Request) {
       seats_total
     } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("trip_dates")
       .update({ 
         base_price_override, 
@@ -118,4 +105,4 @@ export async function PATCH(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

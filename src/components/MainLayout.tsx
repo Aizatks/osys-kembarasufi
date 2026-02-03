@@ -17,6 +17,7 @@ import { CreativeRequestsContent } from "./CreativeRequestsContent";
 import { SettingsContent } from "./SettingsContent";
 import { WhatsAppContent } from "./WhatsAppContent";
 import { AttendanceContent } from "./hr/AttendanceContent";
+import { AttendanceSettingsContent } from "./hr/AttendanceSettingsContent";
 import { MemoContent } from "./hr/MemoContent";
 import { ClaimContent } from "./hr/ClaimContent";
 import { StaffDocsContent } from "./hr/StaffDocsContent";
@@ -31,6 +32,8 @@ import { PricingSettingsContent } from "./operations/PricingSettingsContent";
 import { RotatorContent } from "./whatsapp/RotatorContent";
 import { MonitoringContent } from "./whatsapp/MonitoringContent";
 import { BlastingContent } from "./whatsapp/BlastingContent";
+import MonitoringBouncer from "./whatsapp/MonitoringBouncer";
+import WhatsAppManagement from "./whatsapp/WhatsAppManagement";
 import { AgentOrders } from "./agent/AgentOrders";
 import { AgentReports } from "./agent/AgentReports";
 import { ExportRequestsContent } from "./ExportRequestsContent";
@@ -340,6 +343,7 @@ export function MainLayout({ children }: Props) {
                   
                     {/* New HR & Ops Views */}
                     {activeView === "hr-attendance" && <AttendanceContent />}
+                    {activeView === "hr-attendance-settings" && <AttendanceSettingsContent />}
                     {activeView === "hr-memos" && <MemoContent />}
                     {activeView === "hr-claims" && <ClaimContent />}
                     {activeView === "hr-staff-docs" && <StaffDocsContent />}
@@ -352,9 +356,9 @@ export function MainLayout({ children }: Props) {
                     {activeView === "operations-roster" && <RosterContent />}
                     {activeView === "trip-dates" && <TripDatesContent />}
                     {activeView === "package-pricing" && <PricingSettingsContent />}
-                    {activeView === "whatsapp-rotator" && <RotatorContent />}
-                      {activeView === "whatsapp-blasting" && <BlastingContent />}
-                      {activeView === "whatsapp-monitoring" && <MonitoringContent />}
+                      {activeView === "whatsapp-rotator" && <RotatorContent />}
+                        {activeView === "whatsapp-blasting" && <BlastingContent />}
+                        {activeView === "whatsapp-monitoring" && <MonitoringBouncer />}
 
                       {/* Agent Views */}
                       {activeView === "agent-orders" && <AgentOrders />}

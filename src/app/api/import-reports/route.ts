@@ -29,7 +29,7 @@ async function getAuthenticatedStaff(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const token = extractTokenFromHeader(authHeader);
   if (token) {
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (decoded?.userId) {
       const { data: staff } = await supabase
         .from("staff")

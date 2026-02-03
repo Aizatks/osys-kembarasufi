@@ -1,14 +1,10 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth, withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
-    const { data: pricing, error } = await supabase
+    const { data: pricing, error } = await supabaseAdmin
       .from("package_pricing")
       .select("*")
       .order("created_at", { ascending: false });
@@ -19,9 +15,9 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { 
@@ -37,7 +33,7 @@ export async function POST(req: Request) {
       optional_places
     } = body;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("package_pricing")
       .upsert([{ 
         package_id, 
@@ -61,4 +57,4 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

@@ -1,14 +1,10 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+import { withAuth, withRole } from '@/lib/api-auth';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET() {
+export const GET = withAuth(async (request: NextRequest, user) => {
   try {
-    const { data: templates, error } = await supabase
+    const { data: templates, error } = await supabaseAdmin
       .from('whatsapp_templates')
       .select('*')
       .order('id');
@@ -18,12 +14,12 @@ export async function GET() {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = withRole(['admin', 'superadmin'], async (request: NextRequest, user) => {
   try {
     const { id, content } = await request.json();
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('whatsapp_templates')
       .update({ content, updated_at: new Date().toISOString() })
       .eq('id', id);
@@ -33,4 +29,4 @@ export async function PUT(request: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

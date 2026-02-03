@@ -1,25 +1,25 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
+import { withAuth, withRole } from "@/lib/api-auth";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(req: Request) {
+export const GET = withAuth(async (req: NextRequest, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const staff_id = searchParams.get("staff_id");
     const period = searchParams.get("period");
 
-    let query = supabase
+    let query = supabaseAdmin
       .from("hr_payroll")
       .select("*")
       .order("period_start", { ascending: false });
 
-    if (staff_id) {
+    // Staff can only see their own payroll, admin can see all
+    if (!['admin', 'superadmin'].includes(user.role)) {
+      query = query.eq("staff_id", user.userId);
+    } else if (staff_id) {
       query = query.eq("staff_id", staff_id);
     }
+    
     if (period) {
       query = query.eq("period_start", period);
     }
@@ -32,9 +32,9 @@ export async function GET(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { 
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
     const total_amount = basic_salary + (allowances?.reduce((a: any, b: any) => a + b.amount, 0) || 0) - (deductions?.reduce((a: any, b: any) => a + b.amount, 0) || 0) + (claims_amount || 0);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("hr_payroll")
       .insert([{ 
         staff_id, 
@@ -71,9 +71,9 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});
 
-export async function PATCH(req: Request) {
+export const PATCH = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
   try {
     const body = await req.json();
     const { id, status } = body;
@@ -83,7 +83,7 @@ export async function PATCH(req: Request) {
       updateData.paid_at = new Date().toISOString();
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("hr_payroll")
       .update(updateData)
       .eq("id", id)
@@ -96,4 +96,4 @@ export async function PATCH(req: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
+});

@@ -26,7 +26,7 @@ interface PackageSelection {
   pax: { adult: number; cwb: number; cwob: number; infant: number };
   insurancePax: { standard: number; senior: number };
   surchargeOverride: number | "";
-  singleRoomCount: number;
+  singleRoomPrice: number; // Changed from singleRoomCount - now stores price directly
   dates: TripDate[];
   loadingDates: boolean;
   visaManual: { 
@@ -45,7 +45,7 @@ const createEmptyPackage = (): PackageSelection => ({
   pax: { adult: 1, cwb: 0, cwob: 0, infant: 0 },
   insurancePax: { standard: 0, senior: 0 },
   surchargeOverride: "",
-  singleRoomCount: 0,
+  singleRoomPrice: 0, // Changed from singleRoomCount - now stores price directly
   dates: [],
   loadingDates: false,
   visaManual: { enabled: false, entries: [] },
@@ -202,7 +202,15 @@ export function QuotationCalculatorV2({ data }: Props) {
       const fetchDates = async () => {
         updatePackage(activePackageIdx, { loadingDates: true });
         try {
-          const res = await fetch(`/api/dates?gid=${pkgData.sheetGid}&pkgName=${encodeURIComponent(pkgData.name)}`);
+          const headers: Record<string, string> = {};
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          const res = await fetch(`/api/dates?gid=${pkgData.sheetGid}&pkgName=${encodeURIComponent(pkgData.name)}`, {
+            headers
+          });
+          
           if (res.ok) {
             const json = await res.json();
             updatePackage(activePackageIdx, { dates: json.dates || [], loadingDates: false });
@@ -302,7 +310,7 @@ export function QuotationCalculatorV2({ data }: Props) {
       ? pkg.visaManual.entries.reduce((sum, entry) => sum + (entry.price * entry.pax), 0)
       : totalPaxExcludingInfant * costs.visa;
     const totalSurcharge = totalPaxExcludingInfant * surcharge;
-    const singleRoomTotal = pkg.singleRoomCount * costs.singleRoom;
+    const singleRoomTotal = pkg.singleRoomPrice; // Now uses price directly instead of count * rate
 
     const optionalTotal = pkg.optionalPlaces.reduce((sum, place) => sum + (place.price * place.pax), 0);
 
@@ -398,7 +406,7 @@ export function QuotationCalculatorV2({ data }: Props) {
       if (pkg.pax.cwb > 0) text += `- Child (Bed): ${pkg.pax.cwb} x RM${calc.pricePerCwb.toLocaleString()} = RM${calc.cwbBaseTotal.toLocaleString()}\n`;
       if (pkg.pax.cwob > 0) text += `- Child (No Bed): ${pkg.pax.cwob} x RM${calc.pricePerCwob.toLocaleString()} = RM${calc.cwobBaseTotal.toLocaleString()}\n`;
       if (pkg.pax.infant > 0) text += `- Infant: ${pkg.pax.infant} x RM${calc.pricePerInfant.toLocaleString()} = RM${calc.infantTotal.toLocaleString()}\n`;
-      if (pkg.singleRoomCount > 0) text += `- Single Room: ${pkg.singleRoomCount} x RM${pkgData.costs.singleRoom.toLocaleString()} = RM${calc.singleRoomTotal.toLocaleString()}\n`;
+      if (pkg.singleRoomPrice > 0) text += `- Single Room Supplement: RM${pkg.singleRoomPrice.toLocaleString()}\n`;
       
       text += `\n*KOS TAMBAHAN:*\n`;
       if (calc.totalTipping > 0) text += `- Tipping: ${calc.totalPaxExcludingInfant} pax x RM${calc.tip} = RM${calc.totalTipping.toLocaleString()}\n`;
@@ -481,7 +489,7 @@ export function QuotationCalculatorV2({ data }: Props) {
         if (pkg.pax.cwb > 0) text += `- Child (Bed): ${pkg.pax.cwb} x RM${calc.pricePerCwb.toLocaleString()} = RM${calc.cwbBaseTotal.toLocaleString()}\n`;
         if (pkg.pax.cwob > 0) text += `- Child (No Bed): ${pkg.pax.cwob} x RM${calc.pricePerCwob.toLocaleString()} = RM${calc.cwobBaseTotal.toLocaleString()}\n`;
         if (pkg.pax.infant > 0) text += `- Infant: ${pkg.pax.infant} x RM${calc.pricePerInfant.toLocaleString()} = RM${calc.infantTotal.toLocaleString()}\n`;
-        if (pkg.singleRoomCount > 0) text += `- Single Room: ${pkg.singleRoomCount} x RM${pkgData.costs.singleRoom.toLocaleString()} = RM${calc.singleRoomTotal.toLocaleString()}\n`;
+        if (pkg.singleRoomPrice > 0) text += `- Single Room Supplement: RM${pkg.singleRoomPrice.toLocaleString()}\n`;
         
         text += `\n*Kos Tambahan:*\n`;
         if (calc.totalTipping > 0) text += `- Tipping: ${calc.totalPaxExcludingInfant} pax x RM${calc.tip} = RM${calc.totalTipping.toLocaleString()}\n`;
@@ -638,7 +646,7 @@ export function QuotationCalculatorV2({ data }: Props) {
             },
             pax: mainPkg?.pax,
             insurancePax: mainPkg?.insurancePax,
-            singleRoomPax: mainPkg?.singleRoomCount,
+            singleRoomPrice: mainPkg?.singleRoomPrice,
             visaManual: mainPkg?.visaManual,
             optionalPlaces: mainPkg?.optionalPlaces,
             remarks: remark,
@@ -794,7 +802,11 @@ export function QuotationCalculatorV2({ data }: Props) {
       if (pkg.pax.cwb > 0) addRow("Child (With Bed)", pkg.pax.cwb, calc.pricePerCwb, calc.cwbBaseTotal);
       if (pkg.pax.cwob > 0) addRow("Child (No Bed)", pkg.pax.cwob, calc.pricePerCwob, calc.cwobBaseTotal);
       if (pkg.pax.infant > 0) addRow("Infant", pkg.pax.infant, calc.pricePerInfant, calc.infantTotal);
-      if (pkg.singleRoomCount > 0) addRow("Single Room", pkg.singleRoomCount, pkgData.costs.singleRoom, calc.singleRoomTotal);
+      if (pkg.singleRoomPrice > 0) {
+        pdf.text("Single Room Supplement", leftMargin + 3, y);
+        pdf.text(`RM ${pkg.singleRoomPrice.toLocaleString()}`, rightMargin - 3, y, { align: "right" });
+        y += 7;
+      }
 
       y += 3;
       pdf.line(leftMargin, y, rightMargin, y);
@@ -897,7 +909,7 @@ export function QuotationCalculatorV2({ data }: Props) {
         if (pkg.pax.cwb > 0) { pdf.text(`CWB: ${pkg.pax.cwb} x RM${calc.pricePerCwb.toLocaleString()} = RM${calc.cwbBaseTotal.toLocaleString()}`, leftMargin, y); y += 6; }
         if (pkg.pax.cwob > 0) { pdf.text(`CWOB: ${pkg.pax.cwob} x RM${calc.pricePerCwob.toLocaleString()} = RM${calc.cwobBaseTotal.toLocaleString()}`, leftMargin, y); y += 6; }
         if (pkg.pax.infant > 0) { pdf.text(`Infant: ${pkg.pax.infant} x RM${calc.pricePerInfant.toLocaleString()} = RM${calc.infantTotal.toLocaleString()}`, leftMargin, y); y += 6; }
-        if (pkg.singleRoomCount > 0) { pdf.text(`Single Room: ${pkg.singleRoomCount} x RM${pkgData.costs.singleRoom.toLocaleString()} = RM${calc.singleRoomTotal.toLocaleString()}`, leftMargin, y); y += 6; }
+        if (pkg.singleRoomPrice > 0) { pdf.text(`Single Room Supplement: RM${pkg.singleRoomPrice.toLocaleString()}`, leftMargin, y); y += 6; }
         if (calc.totalTipping > 0) { pdf.text(`Tipping: RM${calc.totalTipping.toLocaleString()}`, leftMargin, y); y += 6; }
         if (calc.totalSurcharge > 0) { pdf.text(`Surcharge: RM${calc.totalSurcharge.toLocaleString()}`, leftMargin, y); y += 6; }
         
@@ -1551,22 +1563,28 @@ export function QuotationCalculatorV2({ data }: Props) {
 
                   <Separator />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold">Single Room Count</Label>
-                        <Input 
-                          type="text"
-                          inputMode="numeric"
-                          value={activePackage?.singleRoomCount === 0 ? "" : activePackage?.singleRoomCount} 
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '');
-                            updatePackage(activePackageIdx, { 
-                              singleRoomCount: val === "" ? 0 : parseInt(val) 
-                            });
-                          }}
-                          className="bg-white h-9"
-                        />
-                      </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold">Single Room Supplement (RM)</Label>
+                          <Input 
+                            type="text"
+                            inputMode="numeric"
+                            placeholder={selectedPkg ? `Rate: RM${selectedPkg.costs.singleRoom}/pax` : "0"}
+                            value={activePackage?.singleRoomPrice === 0 ? "" : activePackage?.singleRoomPrice} 
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              updatePackage(activePackageIdx, { 
+                                singleRoomPrice: val === "" ? 0 : parseInt(val) 
+                              });
+                            }}
+                            className="bg-white h-9"
+                          />
+                          {selectedPkg && selectedPkg.costs.singleRoom > 0 && (
+                            <p className="text-[10px] text-muted-foreground">
+                              Rate pakej: RM{selectedPkg.costs.singleRoom.toLocaleString()}/pax
+                            </p>
+                          )}
+                        </div>
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold">Surcharge Manual (RM/pax)</Label>
                         <Input 
