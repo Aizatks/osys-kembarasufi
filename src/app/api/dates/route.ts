@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchPackageDates, PACKAGE_SHEET_MAP, SheetConfig, findSheetKeyFromPackageName } from "@/lib/sheets";
-import { withAuth } from "@/lib/api-auth";
 
-export const GET = withAuth(async (req: NextRequest, user) => {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const pkgName = searchParams.get("pkgName");
   const gid = searchParams.get("gid");
@@ -43,4 +42,4 @@ export const GET = withAuth(async (req: NextRequest, user) => {
   const dates = await fetchPackageDates(SHEET_ID, gid, finalConfig);
 
   return NextResponse.json({ dates });
-});
+}

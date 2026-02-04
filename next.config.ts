@@ -23,19 +23,14 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  allowedDevOrigins: [
-    "localhost:3000",
-    "*.orchids.cloud",
-    "*.vercel.app",
-  ],
-  turbopack: {
-    rules: {
-      "*.{jsx,tsx}": {
-        loaders: [LOADER]
-      }
-    }
-  }
+  serverExternalPackages: ['@whiskeysockets/baileys', 'pino']
 };
 
 export default nextConfig;
-// Orchids restart: 1770140753462
+// Orchids restart: 1770196568718
+// Restart: Thu Jan 29 18:52:42 UTC 2026
+// Restart: Thu Jan 29 18:53:28 UTC 2026
+// Sync: 1769712825
+// Force restart Thu Jan 29 18:56:49 UTC 2026
+// Force restart 1769713047
+// Cache break 1769713068

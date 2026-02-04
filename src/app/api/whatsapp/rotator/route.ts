@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { withAuth, withRole } from "@/lib/api-auth";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-export const GET = withAuth(async (req: NextRequest, user) => {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(req: Request) {
   try {
-    const { data: rotators, error } = await supabaseAdmin
+    const { data: rotators, error } = await supabase
       .from("whatsapp_rotators")
       .select(`
         *,
@@ -18,14 +22,14 @@ export const GET = withAuth(async (req: NextRequest, user) => {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}
 
-export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { name, slug, logic, pixel_id, tiktok_pixel_id } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("whatsapp_rotators")
       .insert([{ name, slug, logic, pixel_id, tiktok_pixel_id }])
       .select()
@@ -37,17 +41,17 @@ export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, u
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}
 
-export const PATCH = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
+export async function PATCH(req: Request) {
   try {
     const body = await req.json();
     const { id, numbers } = body;
 
     // Delete existing numbers and insert new ones
-    await supabaseAdmin.from("whatsapp_rotator_numbers").delete().eq("rotator_id", id);
+    await supabase.from("whatsapp_rotator_numbers").delete().eq("rotator_id", id);
     
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("whatsapp_rotator_numbers")
       .insert(numbers.map((n: any) => ({ ...n, rotator_id: id })))
       .select();
@@ -58,4 +62,4 @@ export const PATCH = withRole(['admin', 'superadmin'], async (req: NextRequest, 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}

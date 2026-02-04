@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json(
         { error: 'Token tidak sah atau telah tamat tempoh' },

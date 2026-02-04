@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Pencil, Trash2, Loader2, TrendingUp, DollarSign, Users, Upload, Download, Calendar, FileSpreadsheet, FileText, CheckSquare, X, ChevronUp, ChevronDown, ChevronsUpDown, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { PackageSelect } from "@/components/PackageSelect";
 
 interface SalesReport {
   id: string;
@@ -846,9 +847,12 @@ export function SalesReportTab() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Nama Pakej</Label>
-                  <Input value={formData.nama_pakej} onChange={(e) => setFormData({...formData, nama_pakej: e.target.value})} />
-                </div>
+                    <Label>Nama Pakej</Label>
+                    <PackageSelect 
+                      value={formData.nama_pakej} 
+                      onChange={(v) => setFormData({...formData, nama_pakej: v})} 
+                    />
+                  </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Date Closed</Label>
@@ -1028,35 +1032,41 @@ export function SalesReportTab() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Nilai Baru</Label>
-                  {bulkEditField === "bulan" ? (
-                    <Select value={bulkEditValue} onValueChange={setBulkEditValue}>
-                      <SelectTrigger><SelectValue placeholder="Pilih bulan..." /></SelectTrigger>
-                      <SelectContent>
-                        {MONTHS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  ) : bulkEditField === "status_bayaran" ? (
-                    <Select value={bulkEditValue} onValueChange={setBulkEditValue}>
-                      <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
-                      <SelectContent>
-                        {STATUS_BAYARAN.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  ) : bulkEditField === "status_peserta" ? (
-                    <Select value={bulkEditValue} onValueChange={setBulkEditValue}>
-                      <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
-                      <SelectContent>
-                        {STATUS_PESERTA.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input 
-                      placeholder="Masukkan nilai baru..." 
-                      value={bulkEditValue} 
-                      onChange={(e) => setBulkEditValue(e.target.value)} 
-                    />
-                  )}
+                    <Label>Nilai Baru</Label>
+                    {bulkEditField === "bulan" ? (
+                      <Select value={bulkEditValue} onValueChange={setBulkEditValue}>
+                        <SelectTrigger><SelectValue placeholder="Pilih bulan..." /></SelectTrigger>
+                        <SelectContent>
+                          {MONTHS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : bulkEditField === "status_bayaran" ? (
+                      <Select value={bulkEditValue} onValueChange={setBulkEditValue}>
+                        <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
+                        <SelectContent>
+                          {STATUS_BAYARAN.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : bulkEditField === "status_peserta" ? (
+                      <Select value={bulkEditValue} onValueChange={setBulkEditValue}>
+                        <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
+                        <SelectContent>
+                          {STATUS_PESERTA.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : bulkEditField === "nama_pakej" ? (
+                      <PackageSelect 
+                        value={bulkEditValue} 
+                        onChange={setBulkEditValue}
+                        placeholder="Pilih pakej..."
+                      />
+                    ) : (
+                      <Input 
+                        placeholder="Masukkan nilai baru..." 
+                        value={bulkEditValue} 
+                        onChange={(e) => setBulkEditValue(e.target.value)} 
+                      />
+                    )}
                 </div>
                 <Button onClick={handleBulkEdit} disabled={!bulkEditField || !bulkEditValue} className="w-full bg-blue-600 hover:bg-blue-700">
                   <Pencil className="w-4 h-4 mr-2" /> Kemaskini {selectedIds.size} Rekod

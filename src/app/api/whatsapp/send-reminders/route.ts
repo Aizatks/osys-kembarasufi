@@ -1,19 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { whatsappManager } from '@/lib/whatsapp-service';
 import { supabaseAdmin } from '@/lib/supabase';
-import { withAuth } from '@/lib/api-auth';
 
-export const POST = withAuth(async (request: NextRequest, user) => {
+export async function POST(request: Request) {
   try {
     const { reminders, staffId } = await request.json();
     
     if (!reminders || !Array.isArray(reminders) || !staffId) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-    }
-
-    // Verify user can only send as themselves (unless admin)
-    if (staffId !== user.userId && !['admin', 'superadmin'].includes(user.role)) {
-      return NextResponse.json({ error: 'Unauthorized - Cannot send as another user' }, { status: 403 });
     }
 
     const results = [];
@@ -39,4 +33,4 @@ export const POST = withAuth(async (request: NextRequest, user) => {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}

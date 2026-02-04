@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { fetchSheetData } from "@/lib/sheets";
-import { withAuth } from "@/lib/api-auth";
 
-export const GET = withAuth(async (request: NextRequest, user) => {
+export async function GET() {
   try {
     const data = await fetchSheetData();
     const packageNames = Array.from(new Set(Object.values(data).map(p => p.name))).sort();
@@ -12,4 +11,4 @@ export const GET = withAuth(async (request: NextRequest, user) => {
     console.error("Error fetching packages:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-});
+}

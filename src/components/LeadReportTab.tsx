@@ -12,6 +12,7 @@ import { Plus, Pencil, Trash2, Loader2, Phone, Target, UserCheck, Upload, Downlo
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PackageSelect } from "@/components/PackageSelect";
 
 interface LeadReport {
   id: string;
@@ -856,9 +857,13 @@ const handleBulkDelete = async () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Nama Pakej</Label>
-                  <Input placeholder="Cth: Pakej Turkiye" value={formData.nama_pakej} onChange={(e) => setFormData({...formData, nama_pakej: e.target.value})} />
-                </div>
+                    <Label>Nama Pakej</Label>
+                    <PackageSelect 
+                      value={formData.nama_pakej} 
+                      onChange={(v) => setFormData({...formData, nama_pakej: v})}
+                      placeholder="Pilih pakej..."
+                    />
+                  </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>No. Phone</Label>

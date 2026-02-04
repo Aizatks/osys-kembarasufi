@@ -16,7 +16,7 @@ async function getAuthenticatedStaff(request: NextRequest) {
   const token = extractTokenFromHeader(authHeader);
   
   if (token) {
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (payload) {
       const supabase = getSupabase();
       const { data: staff } = await supabase

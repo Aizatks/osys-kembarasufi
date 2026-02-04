@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { PlusCircle, Loader2 } from "lucide-react";
+import { PackageSelect } from "@/components/PackageSelect";
 
 export function MarketingSpendingForm({ 
   onSuccess, 
@@ -23,13 +24,13 @@ export function MarketingSpendingForm({
   const { token } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [packages, setPackages] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     platform: "Meta Ads",
     is_tiktok_live: false,
     nama_pakej: "",
+    campaign_name: "",
     amount: "",
   });
 
@@ -40,30 +41,11 @@ export function MarketingSpendingForm({
         platform: initialData.platform,
         is_tiktok_live: initialData.is_tiktok_live,
         nama_pakej: initialData.nama_pakej,
+        campaign_name: initialData.campaign_name || "",
         amount: initialData.amount.toString(),
       });
     }
   }, [initialData]);
-
-  useEffect(() => {
-    if (open && token) {
-      fetchPackages();
-    }
-  }, [open, token]);
-
-  const fetchPackages = async () => {
-    try {
-      const res = await fetch("/api/packages", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const result = await res.json();
-      if (result.data) {
-        setPackages(result.data);
-      }
-    } catch (error) {
-      console.error("Error fetching packages:", error);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,14 +77,15 @@ export function MarketingSpendingForm({
       toast.success(initialData ? "Data berjaya dikemaskini" : "Data perbelanjaan berjaya disimpan");
       setOpen(false);
       if (!initialData) {
-        setFormData({
-          date: new Date().toISOString().split('T')[0],
-          platform: "Meta Ads",
-          is_tiktok_live: false,
-          nama_pakej: "",
-          amount: "",
-        });
-      }
+          setFormData({
+            date: new Date().toISOString().split('T')[0],
+            platform: "Meta Ads",
+            is_tiktok_live: false,
+            nama_pakej: "",
+            campaign_name: "",
+            amount: "",
+          });
+        }
       if (onSuccess) onSuccess();
     } catch (error) {
       toast.error("Ralat menyimpan data");
@@ -164,28 +147,25 @@ export function MarketingSpendingForm({
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="package">Pakej</Label>
-            <Select 
-              value={formData.nama_pakej} 
-              onValueChange={(v) => setFormData({ ...formData, nama_pakej: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih Pakej" />
-              </SelectTrigger>
-              <SelectContent>
-                {packages.map((pkg) => (
-                  <SelectItem key={pkg} value={pkg}>{pkg}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Atau taip nama pakej baru..."
-              value={formData.nama_pakej}
-              onChange={(e) => setFormData({ ...formData, nama_pakej: e.target.value })}
-              className="mt-2"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="package">Pakej</Label>
+              <PackageSelect 
+                value={formData.nama_pakej} 
+                onChange={(v) => setFormData({ ...formData, nama_pakej: v })}
+                placeholder="Pilih Pakej"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="campaign_name">Nama Kempen (Opsional)</Label>
+              <Input
+                id="campaign_name"
+                type="text"
+                placeholder="cth: Pencarian Ejen, MATTA Fair"
+                value={formData.campaign_name}
+                onChange={(e) => setFormData({ ...formData, campaign_name: e.target.value })}
+              />
+            </div>
 
           <div className="space-y-2">
             <Label htmlFor="amount">Jumlah Spending (RM)</Label>

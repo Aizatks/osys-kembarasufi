@@ -1,13 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { withRole } from "@/lib/api-auth";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-export const GET = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
-    let query = supabaseAdmin
+    let query = supabase
       .from("hr_intern_profiles")
       .select("*")
       .order("created_at", { ascending: false });
@@ -24,9 +28,9 @@ export const GET = withRole(['admin', 'superadmin'], async (req: NextRequest, us
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}
 
-export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { 
@@ -39,7 +43,7 @@ export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, u
       status 
     } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("hr_intern_profiles")
       .insert([{ 
         full_name, 
@@ -59,14 +63,14 @@ export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, u
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}
 
-export const PATCH = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
+export async function PATCH(req: Request) {
   try {
     const body = await req.json();
     const { id, evaluation_score, status, remarks } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("hr_intern_profiles")
       .update({ evaluation_score, status, remarks })
       .eq("id", id)
@@ -79,4 +83,4 @@ export const PATCH = withRole(['admin', 'superadmin'], async (req: NextRequest, 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}

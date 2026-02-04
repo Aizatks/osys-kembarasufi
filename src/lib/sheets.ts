@@ -172,22 +172,14 @@ export const PACKAGE_SHEET_MAP: Record<string, SheetConfig> = {
     'KEMBOJA': { gid: '2104681834', dateCol: 2, surCol: 1, availCol: 5 },
     'CAMBODIA': { gid: '2104681834', dateCol: 2, surCol: 1, availCol: 5 },
     
-    // Indonesia - FIXED FEB 2026
+    // Indonesia - VERIFIED
     'INDONESIA': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5 },
-    'TRANS SUMATERA': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 3, rowEnd: 30 },
-    'TRANS INDONESIA': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 3, rowEnd: 30 },
-    'JAKARTA BANDUNG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 35, rowEnd: 64 },
-    'JAKARTA': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 35, rowEnd: 64 },
-    'BANDUNG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 35, rowEnd: 64 },
-    'BALI': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 69, rowEnd: 94 },
-    'MEDAN': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 98, rowEnd: 127 },
-    'ACEH SABANG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 132, rowEnd: 161 },
-    'ACEH + PULAU SABANG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 132, rowEnd: 161 },
-    'ACEH': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 132, rowEnd: 161 },
-    'PULAU SABANG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 132, rowEnd: 161 },
-    'PADANG BUKITTINGGI': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 166, rowEnd: 197 },
-    'PADANG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 166, rowEnd: 197 },
-    'BUKITTINGGI': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 166, rowEnd: 197 },
+    'TRANS SUMATERA': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 0, rowEnd: 30 },
+    'JAKARTA BANDUNG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 33, rowEnd: 54 },
+    'BALI': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 57, rowEnd: 74 },
+    'MEDAN': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 78, rowEnd: 102 },
+    'ACEH SABANG': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 105, rowEnd: 128 },
+    'PADANG BUKITTINGGI': { gid: '492345239', dateCol: 3, surCol: 1, availCol: 5, rowStart: 131, rowEnd: 160 },
     
     // Thailand - VERIFIED
     'THAILAND': { gid: '410628206', dateCol: 1, surCol: -1, availCol: 4 },
@@ -227,107 +219,57 @@ export const PACKAGE_SHEET_MAP: Record<string, SheetConfig> = {
 };
 
 export function findSheetKeyFromPackageName(pkgName: string): string | null {
-  // Normalize: uppercase, replace + & with space, collapse multiple spaces
-  const normalizedName = pkgName
-    .toUpperCase()
-    .replace(/[+&]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  // Also keep original uppercase for exact matches
   const upperName = pkgName.toUpperCase();
   
   const specificMatches: [string, string][] = [
-    // Indonesia - more specific patterns first
-    ['ACEH PULAU SABANG', 'ACEH + PULAU SABANG'],
-    ['ACEH SABANG', 'ACEH SABANG'],
-    ['PULAU SABANG', 'PULAU SABANG'],
-    ['TRANS INDONESIA', 'TRANS INDONESIA'],
-    ['TRANS SUMATERA', 'TRANS SUMATERA'],
-    ['JAKARTA BANDUNG', 'JAKARTA BANDUNG'],
-    ['PADANG BUKITTINGGI', 'PADANG BUKITTINGGI'],
-    
-    // China - Beijing variations
     ['BEIJING INNER MONGOLIA', 'BEIJING INNER MONGOLIA'],
-    ['BEIJING XIAN', 'BEIJING XIAN'],
     ['INNER MONGOLIA', 'INNER MONGOLIA'],
-    ['WILAYAH YUNNAN', 'YUNNAN'],
+    ['BEIJING XIAN', 'BEIJING XIAN'],
+    ['BEIJING-XIAN', 'BEIJING XIAN'],
     ['YUNNAN', 'YUNNAN'],
-    ['CHENGDU', 'CHENGDU'],
-    ['CHONGQING', 'CHENGDU'],
-    ['SILK ROAD', 'SILK ROAD'],
-    
-    // Scandinavia/Nordic - longer patterns first
-    ['FAROE ISLAND NORWAY LOFOTEN', 'FAROE ISLAND + NORWAY LOFOTEN'],
-    ['NORWAY LOFOTEN ICELAND', 'NORWAY LOFOTEN + ICELAND'],
-    ['FAROE ISLAND ICELAND', 'FAROE ISLAND + ICELAND'],
-    ['GREENLAND LOFOTEN', 'GREENLAND + LOFOTEN'],
+    ['FAROE ISLAND + NORWAY LOFOTEN', 'FAROE ISLAND + NORWAY LOFOTEN'],
+    ['NORWAY LOFOTEN + ICELAND', 'NORWAY LOFOTEN + ICELAND'],
     ['NORWAY LOFOTEN', 'NORWAY LOFOTEN'],
-    ['ANTARTICA', 'ANTARTICA'],
-    ['MAGESTIC ANTARTICA', 'ANTARTICA'],
-    ['ICELAND', 'ICELAND'],
-    ['SCANDINAVIA', 'SCANDINAVIA'],
-    
-    // Central Asia
+    ['FAROE ISLAND + ICELAND', 'FAROE ISLAND + ICELAND'],
     ['CENTRAL ASIA', 'CENTRAL ASIA'],
     ['KYRGYZSTAN', 'CENTRAL ASIA'],
     ['KAZAKHSTAN', 'CENTRAL ASIA'],
     ['UZBEKISTAN', 'CENTRAL ASIA'],
-    
-    // Americas & Oceania
     ['NEW ZEALAND', 'NEW ZEALAND'],
     ['SOUTH AMERICA', 'SOUTH AMERICA'],
     ['CANADA', 'CANADA'],
-    ['MEXICO CUBA', 'MEXICO + CUBA'],
-    
-    // Europe
+    ['GREENLAND + LOFOTEN', 'GREENLAND + LOFOTEN'],
+    ['GREENLAND', 'GREENLAND + LOFOTEN'],
+    ['ANTARTICA', 'ANTARTICA'],
+    ['ICELAND', 'ICELAND'],
     ['CENTRAL EASTERN EUROPE', 'CEE'],
     ['CENTRAL EASTERN', 'CEE'],
-    
-    // Middle East
     ['JORDAN AQSA', 'JORDAN AQSA'],
-    
-    // Vietnam
+    ['TRANS SUMATERA', 'TRANS SUMATERA'],
+    ['JAKARTA BANDUNG', 'JAKARTA BANDUNG'],
+    ['ACEH SABANG', 'ACEH SABANG'],
+    ['PADANG BUKITTINGGI', 'PADANG BUKITTINGGI'],
     ['DANANG', 'DANANG'],
-    ['DA NANG', 'DANANG'],
     ['HANOI', 'HANOI'],
     ['PHU QUOC', 'PHU QUOC'],
     ['SAPA', 'HANOI'],
     ['HALONG', 'HANOI'],
-    
-    // Thailand/Malaysia domestic
-    ['HATYAI', 'THAILAND'],
-    ['SONGKHLA', 'THAILAND'],
-    ['TASIK KENYIR', 'DOMESTIK'],
-    ['TAMAN NEGARA', 'DOMESTIK'],
   ];
   
-  // First try with normalized name (handles + & variations)
   for (const [pattern, key] of specificMatches) {
-    if (normalizedName.includes(pattern)) {
+    if (upperName.includes(pattern)) {
       if (PACKAGE_SHEET_MAP[key]) {
         return key;
       }
     }
   }
   
-  // Then try direct key match with normalized name
   const keys = Object.keys(PACKAGE_SHEET_MAP).sort((a, b) => b.length - a.length);
-  for (const key of keys) {
-    // Normalize the key too for comparison
-    const normalizedKey = key.replace(/[+&]/g, ' ').replace(/\s+/g, ' ').trim();
-    if (normalizedName.includes(normalizedKey) || normalizedName.includes(key)) {
-      return key;
-    }
-  }
-  
-  // Finally try original uppercase (for exact matches like single word packages)
   for (const key of keys) {
     if (upperName.includes(key)) {
       return key;
     }
   }
-  
   return null;
 }
 
@@ -424,7 +366,7 @@ export async function fetchPackageDates(sheetId: string, gid: string, config: Sh
       if (monthNames.includes(lowerDate) || lowerDate.includes('tarikh') || 
           lowerDate === 'date' || lowerDate.includes('date ')) return;
       
-      if (!/\d{1,2}.*(jan|feb|mac|mar|apr|may|mei|jun|jul|aug|ogo|sep|okt|nov|dis|dec)/i.test(dateStr)) return;
+      if (!/\d{1,2}\s*(jan|feb|mac|mar|apr|may|mei|jun|jul|aug|ogo|sep|okt|nov|dis|dec)/i.test(dateStr)) return;
       
       if (lowerDate.includes('flight') || lowerDate.includes('ek') || lowerDate.includes('scroll')) return;
       
@@ -619,13 +561,8 @@ export async function fetchSheetData(): Promise<MasterData> {
       
       const insuranceRates = matchInsuranceToPackage(pkgName, insuranceMap);
 
-      // Extract duration from package name (e.g., "9 HARI 7 MALAM")
-      const durationMatch = pkgName.match(/\((\d+\s*HARI\s*\d+\s*MALAM)\)/i);
-      const duration = durationMatch ? durationMatch[1] : '';
-
       masterData[pkgKey] = {
           name: pkgName.trim(),
-          duration: duration,
           prices: {
             adult: adultPrice,
             cwb: cwbPrice,
@@ -647,44 +584,24 @@ export async function fetchSheetData(): Promise<MasterData> {
       });
 
       // PRICE OVERRIDES - Manual corrections for specific packages
-      // Includes full prices for packages where spreadsheet master data is empty
       const PRICE_OVERRIDES: Record<string, Partial<{ 
-        adult: number; cwb: number; cwob: number; infant: number; tip: number; surcharge: number 
+        cwb: number; cwob: number; tip: number; surcharge: number 
       }>> = {
-        // YUNNAN - Master sheet has empty prices (from sheet header: RM4999 + RM250 TIP)
-        'WILAYAH YUNNAN': { adult: 4999, cwb: 4799, cwob: 4599, infant: 599, tip: 250, surcharge: 250 },
-        'YUNNAN': { adult: 4999, cwb: 4799, cwob: 4599, infant: 599, tip: 250, surcharge: 250 },
-        
-        // VIETNAM 12 NEGERI - Master sheet has empty prices
-        'VIETNAM 12 NEGERI': { adult: 4599, cwb: 4399, cwob: 4199, infant: 599, tip: 200, surcharge: 200 },
-        
-        // Indonesia packages
         'ACEH': { cwb: 1799, cwob: 1699 },
         'SABANG': { cwb: 1799, cwob: 1699 },
         'ACEH SABANG': { cwb: 1799, cwob: 1699 },
         'ACEH + SABANG': { cwb: 1799, cwob: 1699 },
-        'ACEH + PULAU SABANG': { cwb: 1799, cwob: 1699 },
         'PADANG': { cwb: 1499, cwob: 1399 },
         'BUKITTINGGI': { cwb: 1499, cwob: 1399 },
         'BUKIT TINGGI': { cwb: 1499, cwob: 1399 },
         'PADANG BUKITTINGGI': { cwb: 1499, cwob: 1399 },
         'PADANG + BUKITTINGGI': { cwb: 1499, cwob: 1399 },
-        
-        // Europe
         'CEE': { cwob: 8599 },
         'CENTRAL EASTERN': { cwob: 8599 },
-        'SPM': { cwob: 9599 },
-        'SPAIN': { cwob: 9599 },
-        'PORTUGAL': { cwob: 9599 },
-        'MOROCCO': { cwob: 9599 },
-        
-        // Vietnam
         'VIETNAM HANOI': { surcharge: 220 },
         'HANOI': { surcharge: 220 },
         'SAPA': { surcharge: 220 },
         'HALONG': { surcharge: 220 },
-        
-        // East Asia
         'KOREA': { cwb: 4399, cwob: 4199, tip: 250 },
         'SEOUL': { cwb: 4399, cwob: 4199, tip: 250 },
         'NAMI': { cwb: 4399, cwob: 4199, tip: 250 },
@@ -697,9 +614,12 @@ export async function fetchSheetData(): Promise<MasterData> {
         'BEIJING XIAN': { cwb: 4499, cwob: 4299, surcharge: 250 },
         'XIAN': { cwb: 4499, cwob: 4299, surcharge: 250 },
         'TAIWAN': { cwb: 3599, cwob: 3499, tip: 100, surcharge: 200 },
-        
-        // South Asia
         'PAKISTAN': { cwb: 6199, cwob: 5999 },
+        'YUNNAN': { tip: 150 },
+        'SPM': { cwob: 9599 },
+        'SPAIN': { cwob: 9599 },
+        'PORTUGAL': { cwob: 9599 },
+        'MOROCCO': { cwob: 9599 },
       };
 
       // Apply overrides
@@ -707,15 +627,8 @@ export async function fetchSheetData(): Promise<MasterData> {
         const upperName = pkg.name.toUpperCase();
         for (const [pattern, overrides] of Object.entries(PRICE_OVERRIDES)) {
           if (upperName.includes(pattern)) {
-            // Only override if current value is 0 or undefined (for adult prices)
-            if (overrides.adult !== undefined && (!pkg.prices.adult || pkg.prices.adult === 0)) {
-              pkg.prices.adult = overrides.adult;
-            }
             if (overrides.cwb !== undefined) pkg.prices.cwb = overrides.cwb;
             if (overrides.cwob !== undefined) pkg.prices.cwob = overrides.cwob;
-            if (overrides.infant !== undefined && (!pkg.prices.infant || pkg.prices.infant === 0)) {
-              pkg.prices.infant = overrides.infant;
-            }
             if (overrides.tip !== undefined) pkg.costs.tip = overrides.tip;
             if (overrides.surcharge !== undefined) pkg.costs.surcharge_base = overrides.surcharge;
             break; 

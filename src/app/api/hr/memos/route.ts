@@ -1,10 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { withAuth, withRole } from "@/lib/api-auth";
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-export const GET = withAuth(async (req: NextRequest, user) => {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(req: Request) {
   try {
-    const { data: memos, error } = await supabaseAdmin
+    const { searchParams } = new URL(req.url);
+    const staff_id = searchParams.get("staff_id");
+
+    const { data: memos, error } = await supabase
       .from("hr_memos")
       .select(`
         *,
@@ -18,14 +25,14 @@ export const GET = withAuth(async (req: NextRequest, user) => {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}
 
-export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, user) => {
+export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { title, body: content, target_type, target_id, attachments } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("hr_memos")
       .insert([{ title, body: content, target_type, target_id, attachments }])
       .select()
@@ -37,19 +44,14 @@ export const POST = withRole(['admin', 'superadmin'], async (req: NextRequest, u
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}
 
-export const PUT = withAuth(async (req: NextRequest, user) => {
+export async function PUT(req: Request) {
   try {
     const body = await req.json();
     const { memo_id, staff_id } = body;
 
-    // Users can only acknowledge memos for themselves
-    if (staff_id !== user.userId && !['admin', 'superadmin'].includes(user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("hr_memo_acknowledgements")
       .upsert([{ memo_id, staff_id, acknowledged_at: new Date().toISOString() }], { onConflict: "memo_id,staff_id" })
       .select()
@@ -61,4 +63,4 @@ export const PUT = withAuth(async (req: NextRequest, user) => {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-});
+}

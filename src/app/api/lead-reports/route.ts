@@ -17,7 +17,7 @@ async function getAuthenticatedStaff(request: NextRequest) {
     return { staff: null, viewingAsStaff: null, isImpersonating: false };
   }
   
-  const payload = await verifyToken(token);
+  const payload = verifyToken(token);
   if (!payload) {
     return { staff: null, viewingAsStaff: null, isImpersonating: false };
   }

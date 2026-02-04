@@ -136,6 +136,3 @@ class WhatsAppManager {
 }
 
 export const whatsappManager = new WhatsAppManager();
-
-// Alias for backward compatibility with API routes
-export { whatsappManager as waManager };

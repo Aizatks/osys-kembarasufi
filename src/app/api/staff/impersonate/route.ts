@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak dibenarkan' }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role !== 'superadmin') {
       return NextResponse.json({ error: 'Hanya Super Admin boleh impersonate' }, { status: 403 });
     }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak boleh impersonate Super Admin lain' }, { status: 400 });
     }
 
-    const impersonationToken = await generateToken({
+    const impersonationToken = generateToken({
       userId: targetStaff.id,
       email: targetStaff.email,
       name: targetStaff.name,
@@ -91,7 +91,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak dibenarkan' }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || !payload.impersonatedBy) {
       return NextResponse.json({ error: 'Tiada sesi impersonate aktif' }, { status: 400 });
     }
@@ -117,7 +117,7 @@ export async function DELETE(request: NextRequest) {
       userAgent: request.headers.get('user-agent') || 'unknown',
     });
 
-    const originalToken = await generateToken({
+    const originalToken = generateToken({
       userId: originalUser.id,
       email: originalUser.email,
       name: originalUser.name,

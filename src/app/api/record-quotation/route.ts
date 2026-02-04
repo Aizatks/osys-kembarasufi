@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     let staffEmail = '-';
     
     if (token) {
-      const payload = await verifyToken(token);
+      const payload = verifyToken(token);
       if (payload) {
         staffId = payload.userId;
         staffName = payload.name;

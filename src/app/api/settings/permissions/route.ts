@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { verifyToken, extractTokenFromHeader } from '@/lib/auth';
+import { verify } from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader);
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = verify(token, JWT_SECRET) as any;
 
     const { data: permissions, error } = await supabase
       .from('role_permissions')
@@ -31,15 +30,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
-    const token = extractTokenFromHeader(authHeader);
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const decoded = await verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = verify(token, JWT_SECRET) as any;
 
     if (decoded.role !== 'superadmin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

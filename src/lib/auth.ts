@@ -1,8 +1,7 @@
-const JWT_SECRET = process.env.JWT_SECRET;
+import jwt from 'jsonwebtoken';
+import bcryptjs from 'bcryptjs';
 
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'kembara-sufi-secret-key-2026';
 const JWT_EXPIRES_IN = '24h';
 
 export interface JWTPayload {
@@ -15,24 +14,20 @@ export interface JWTPayload {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const bcryptjs = await import('bcryptjs');
-  return bcryptjs.default.hash(password, 12);
+  return bcryptjs.hash(password, 12);
 }
 
 export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-  const bcryptjs = await import('bcryptjs');
-  return bcryptjs.default.compare(password, hashedPassword);
+  return bcryptjs.compare(password, hashedPassword);
 }
 
-export async function generateToken(payload: JWTPayload): Promise<string> {
-  const jwt = await import('jsonwebtoken');
-  return jwt.default.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+export function generateToken(payload: JWTPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
-export async function verifyToken(token: string): Promise<JWTPayload | null> {
+export function verifyToken(token: string): JWTPayload | null {
   try {
-    const jwt = await import('jsonwebtoken');
-    return jwt.default.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, JWT_SECRET) as JWTPayload;
   } catch {
     return null;
   }

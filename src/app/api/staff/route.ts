@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak dibenarkan' }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || !['admin', 'superadmin'].includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak dibenarkan' }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || !['admin', 'superadmin'].includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
@@ -113,7 +113,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak dibenarkan' }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role !== 'superadmin') {
       return NextResponse.json({ error: 'Hanya Super Admin boleh memadam' }, { status: 403 });
     }

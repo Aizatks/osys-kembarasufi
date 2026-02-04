@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 import { logActivity } from "@/lib/activity-logger";
-import { withAuth } from "@/lib/api-auth";
 
-export const GET = withAuth(async (request: NextRequest, user) => {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const assignedTo = searchParams.get("assignedTo");
 
-  let query = supabaseAdmin
+  let query = supabase
     .from("creative_requests")
     .select("*, requester:staff(name), assignee:staff(name)")
     .order("created_at", { ascending: false });
@@ -21,14 +20,14 @@ export const GET = withAuth(async (request: NextRequest, user) => {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json(data);
-});
+}
 
-export const POST = withAuth(async (request: NextRequest, user) => {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, description, request_type, priority, deadline, reference_url } = body;
+    const { title, description, request_type, priority, deadline, requester_id, reference_url } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("creative_requests")
       .insert([
         { 
@@ -37,7 +36,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
           request_type, 
           priority, 
           deadline, 
-          requester_id: user.userId,
+          requester_id,
           reference_url,
           status: 'pending'
         }
@@ -48,7 +47,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await logActivity({
-      staffId: user.userId,
+      staffId: requester_id,
       action: "create_creative_request",
       description: `Created creative request: ${title}`,
       metadata: { requestId: data.id }
@@ -58,14 +57,14 @@ export const POST = withAuth(async (request: NextRequest, user) => {
   } catch (err) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-});
+}
 
-export const PATCH = withAuth(async (request: NextRequest, user) => {
+export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { id, status, assigned_to, result_url } = body;
+    const { id, status, assigned_to, result_url, userId } = body;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("creative_requests")
       .update({ status, assigned_to, result_url, updated_at: new Date().toISOString() })
       .eq("id", id)
@@ -75,7 +74,7 @@ export const PATCH = withAuth(async (request: NextRequest, user) => {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await logActivity({
-      staffId: user.userId,
+      staffId: userId,
       action: "update_creative_request",
       description: `Updated creative request status to ${status}: ${data.title}`,
       metadata: { requestId: id }
@@ -85,4 +84,4 @@ export const PATCH = withAuth(async (request: NextRequest, user) => {
   } catch (err) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
-});
+}

@@ -5,20 +5,17 @@ import {
   Clock, 
   MapPin, 
   Camera, 
-  User, 
   CheckCircle2, 
-  AlertCircle,
   History,
   Settings as SettingsIcon,
   RefreshCw,
   Download,
-  Calendar,
-  Search,
   Users,
   Pencil,
   Trash2,
   X,
-  Save
+  Check,
+  Calendar
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +32,7 @@ interface AttendanceLog {
   id: string;
   staff_id: string;
   staff_name: string;
-  type: "in" | "out" | "IN" | "OUT";
+  type: "in" | "out";
   timestamp: string;
   selfie_url: string;
   location_status: string;
@@ -43,81 +40,69 @@ interface AttendanceLog {
   note: string;
 }
 
-// Helper to detect iframe environment
-const isInIframe = () => {
-  try {
-    return typeof window !== 'undefined' && window.self !== window.top;
-  } catch (e) {
-    return true;
-  }
+const HR_ROLES = ['admin', 'superadmin', 'hr', 'hr-manager', 'c-suite'];
+
+const STATUS_LABELS: Record<string, string> = {
+  'on_time': 'Tepat Masa',
+  'late': 'Lewat',
+  'early_leave': 'Balik Awal',
+  'outside_geofence': 'Luar Kawasan'
 };
 
-// Get today's date in YYYY-MM-DD format
-const getTodayDate = () => {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
+const TYPE_LABELS: Record<string, string> = {
+  'in': 'Clock In',
+  'out': 'Clock Out'
 };
 
 export function AttendanceContent() {
-  const { user, isAdmin, isHR, token } = useAuth();
-  const [todayLogs, setTodayLogs] = useState<AttendanceLog[]>([]);
+  const { user, token, isAdmin, isHR } = useAuth();
+  const [logs, setLogs] = useState<AttendanceLog[]>([]);
+  const [allLogs, setAllLogs] = useState<AttendanceLog[]>([]);
   const [historyLogs, setHistoryLogs] = useState<AttendanceLog[]>([]);
-  const [allStaffLogs, setAllStaffLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [selfie, setSelfie] = useState<string | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [locError, setLocError] = useState<string | null>(null);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [note, setNote] = useState("");
-  const [hasHRAccess, setHasHRAccess] = useState(false);
+  const [activeTab, setActiveTab] = useState("clock");
   
-  // Edit modal state
-  const [editingLog, setEditingLog] = useState<AttendanceLog | null>(null);
-  const [editTime, setEditTime] = useState("");
-  const [editDate, setEditDate] = useState("");
-  const [editType, setEditType] = useState<"in" | "out">("in");
-  const [editStatus, setEditStatus] = useState("");
-  const [editNote, setEditNote] = useState("");
-  
-  // Delete confirmation
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  
-  // Date range for history
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);
     return d.toISOString().split('T')[0];
   });
-  const [endDate, setEndDate] = useState(getTodayDate());
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  
+  const [editingLog, setEditingLog] = useState<AttendanceLog | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const canViewAllStaff = user?.role && HR_ROLES.includes(user.role);
+
   useEffect(() => {
-    if (token) {
-      fetchTodayLogs();
+    fetchTodayLogs();
+    requestLocation();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "history") {
+      fetchHistoryLogs();
+    } else if (activeTab === "all" && canViewAllStaff) {
+      fetchAllStaffLogs();
     }
-    // Check if in iframe/preview mode
-    if (isInIframe()) {
-      setIsPreviewMode(true);
-      setLocError("Preview mode - lokasi tidak tersedia");
-    } else {
-      requestLocation();
-    }
-  }, [token]);
+  }, [activeTab, startDate, endDate]);
 
   const fetchTodayLogs = async () => {
-    if (!token) return;
-    const today = getTodayDate();
     try {
-      const res = await fetch(`/api/hr/attendance?start_date=${today}&end_date=${today}`, {
+      const res = await fetch(`/api/hr/attendance?staff_id=${user?.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
-        setTodayLogs(data.logs || []);
-        setHasHRAccess(data.hasHRAccess || false);
+        setLogs(data.logs || []);
       }
     } catch (err) {
       console.error("Failed to fetch logs", err);
@@ -125,33 +110,38 @@ export function AttendanceContent() {
   };
 
   const fetchHistoryLogs = async () => {
-    if (!token) return;
+    setLoading(true);
     try {
-      const res = await fetch(`/api/hr/attendance?start_date=${startDate}&end_date=${endDate}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(
+        `/api/hr/attendance?staff_id=${user?.id}&start_date=${startDate}&end_date=${endDate}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       if (res.ok) {
         const data = await res.json();
         setHistoryLogs(data.logs || []);
       }
     } catch (err) {
       console.error("Failed to fetch history", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchAllStaffLogs = async () => {
-    if (!token || !hasHRAccess) return;
-    const today = getTodayDate();
+    setLoading(true);
     try {
-      const res = await fetch(`/api/hr/attendance?start_date=${today}&end_date=${today}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(
+        `/api/hr/attendance?all=true&start_date=${startDate}&end_date=${endDate}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       if (res.ok) {
         const data = await res.json();
-        setAllStaffLogs(data.logs || []);
+        setAllLogs(data.logs || []);
       }
     } catch (err) {
-      console.error("Failed to fetch all staff logs", err);
+      console.error("Failed to fetch all logs", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -171,15 +161,10 @@ export function AttendanceContent() {
         setLocError(null);
       },
       (err) => {
-        if (err.code === err.PERMISSION_DENIED) {
-          setLocError("Sila benarkan akses lokasi dalam tetapan browser");
-        } else if (err.code === err.POSITION_UNAVAILABLE) {
-          setLocError("Lokasi tidak tersedia. Pastikan GPS aktif.");
-        } else {
-          setLocError("Gagal mendapatkan lokasi. Sila cuba lagi.");
-        }
+        setLocError("Gagal mendapatkan lokasi. Sila aktifkan GPS.");
+        console.error(err);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      { enableHighAccuracy: true }
     );
   };
 
@@ -204,25 +189,22 @@ export function AttendanceContent() {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       ctx?.drawImage(video, 0, 0);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      const dataUrl = canvas.toDataURL("image/jpeg");
       setSelfie(dataUrl);
       
-      const stream = video.srcObject as MediaStream | null;
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      video.srcObject = null;
+      const stream = video.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
       setCapturing(false);
     }
   };
 
-  const handleClockAction = async (type: "IN" | "OUT") => {
+  const handleClockAction = async (type: "in" | "out") => {
     if (!selfie) {
-      toast.error("Wajib ambil selfie sebelum clock " + type);
+      toast.error("Wajib ambil selfie sebelum clock " + type.toUpperCase());
       return;
     }
     if (!location) {
-      toast.error("Wajib aktifkan lokasi sebelum clock " + type);
+      toast.error("Wajib aktifkan lokasi sebelum clock " + type.toUpperCase());
       requestLocation();
       return;
     }
@@ -248,7 +230,7 @@ export function AttendanceContent() {
       });
 
       if (res.ok) {
-        toast.success(`Berjaya Clock ${type}!`);
+        toast.success(`Berjaya Clock ${type.toUpperCase()}!`);
         setSelfie(null);
         setNote("");
         fetchTodayLogs();
@@ -263,23 +245,10 @@ export function AttendanceContent() {
     }
   };
 
-  // Open edit modal
-  const openEditModal = (log: AttendanceLog) => {
-    const dt = new Date(log.timestamp);
-    setEditingLog(log);
-    setEditDate(dt.toISOString().split('T')[0]);
-    setEditTime(dt.toTimeString().slice(0, 5));
-    setEditType(log.type.toLowerCase() as "in" | "out");
-    setEditStatus(log.status);
-    setEditNote(log.note || "");
-  };
-
-  // Save edit
-  const handleSaveEdit = async () => {
-    if (!editingLog || !token) return;
+  const handleEdit = async () => {
+    if (!editingLog) return;
     
-    const newTimestamp = new Date(`${editDate}T${editTime}:00`).toISOString();
-    
+    setLoading(true);
     try {
       const res = await fetch("/api/hr/attendance", {
         method: "PATCH",
@@ -289,18 +258,16 @@ export function AttendanceContent() {
         },
         body: JSON.stringify({
           id: editingLog.id,
-          timestamp: newTimestamp,
-          type: editType,
-          status: editStatus,
-          note: editNote
+          type: editingLog.type,
+          status: editingLog.status,
+          timestamp: editingLog.timestamp,
+          note: editingLog.note
         })
       });
 
       if (res.ok) {
         toast.success("Rekod berjaya dikemaskini");
         setEditingLog(null);
-        fetchTodayLogs();
-        fetchHistoryLogs();
         fetchAllStaffLogs();
       } else {
         const error = await res.json();
@@ -308,13 +275,13 @@ export function AttendanceContent() {
       }
     } catch (err) {
       toast.error("Ralat sistem");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Delete attendance
   const handleDelete = async (id: string) => {
-    if (!token) return;
-    
+    setLoading(true);
     try {
       const res = await fetch(`/api/hr/attendance?id=${id}`, {
         method: "DELETE",
@@ -324,8 +291,6 @@ export function AttendanceContent() {
       if (res.ok) {
         toast.success("Rekod berjaya dipadam");
         setDeletingId(null);
-        fetchTodayLogs();
-        fetchHistoryLogs();
         fetchAllStaffLogs();
       } else {
         const error = await res.json();
@@ -333,191 +298,70 @@ export function AttendanceContent() {
       }
     } catch (err) {
       toast.error("Ralat sistem");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderLogItem = (log: AttendanceLog, showName = false, showActions = false) => {
-    const typeUpper = log.type.toUpperCase();
-    const statusLabel: Record<string, string> = {
-      'on_time': 'Tepat Masa',
-      'late': 'Lewat',
-      'early_leave': 'Balik Awal',
-      'out_of_range': 'Luar Kawasan'
-    };
-    const displayStatus = statusLabel[log.status] || log.status;
-    const locStatusOk = log.location_status === 'ok' || log.location_status === 'OK';
-    
-    return (
-      <div key={log.id} className="flex items-center gap-4 p-4 rounded-xl border bg-card hover:shadow-md transition-all">
-        <div className={cn(
-          "w-12 h-12 rounded-full flex items-center justify-center font-bold text-xs",
-          typeUpper === "IN" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
-        )}>
-          {typeUpper}
-        </div>
-        <div className="flex-1">
-          {showName && (
-            <p className="font-medium text-sm text-slate-700 dark:text-slate-300">{log.staff_name}</p>
-          )}
-          <div className="flex items-center justify-between">
-            <p className="font-semibold text-sm">
-              {new Date(log.timestamp).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit" })}
-              {showName && (
-                <span className="font-normal text-muted-foreground ml-2">
-                  {new Date(log.timestamp).toLocaleDateString("ms-MY")}
-                </span>
-              )}
-            </p>
-            <Badge variant={locStatusOk ? "outline" : "destructive"} className="text-[10px] h-5">
-              {locStatusOk ? "OK" : log.location_status.toUpperCase()}
-            </Badge>
-          </div>
-          <p className={cn(
-            "text-xs mt-0.5",
-            log.status === 'late' || log.status === 'early_leave' ? "text-amber-600 font-medium" : "text-muted-foreground"
-          )}>{displayStatus}</p>
-          {log.note && <p className="text-[10px] italic mt-1 text-slate-500">"{log.note}"</p>}
-        </div>
-        {log.selfie_url && (
-          <div className="w-10 h-10 rounded-lg overflow-hidden border">
-            <img src={log.selfie_url} className="w-full h-full object-cover" alt="Selfie" />
-          </div>
-        )}
-        
-        {/* Edit/Delete buttons for HR/Admin */}
-        {showActions && hasHRAccess && (
-          <div className="flex gap-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-slate-500 hover:text-blue-600"
-              onClick={() => openEditModal(log)}
-            >
-              <Pencil className="w-4 h-4" />
-            </Button>
-            {deletingId === log.id ? (
-              <div className="flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-red-600"
-                  onClick={() => handleDelete(log.id)}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => setDeletingId(null)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-slate-500 hover:text-red-600"
-                onClick={() => setDeletingId(log.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        )}
+  const renderLogCard = (log: AttendanceLog, showActions = false) => (
+    <div key={log.id} className="flex items-center gap-4 p-4 rounded-xl border bg-card hover:shadow-md transition-all">
+      <div className={cn(
+        "w-12 h-12 rounded-full flex items-center justify-center font-bold text-xs shrink-0",
+        log.type === "in" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"
+      )}>
+        {log.type === "in" ? "IN" : "OUT"}
       </div>
-    );
-  };
-
-  const myTodayLogs = todayLogs.filter(log => log.staff_id === user?.id);
-
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto p-4">
-      {/* Edit Modal */}
-      {editingLog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Edit Rekod Kehadiran</span>
-                <Button variant="ghost" size="icon" onClick={() => setEditingLog(null)}>
-                  <X className="w-4 h-4" />
-                </Button>
-              </CardTitle>
-              <CardDescription>{editingLog.staff_name}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tarikh</Label>
-                  <Input 
-                    type="date" 
-                    value={editDate}
-                    onChange={(e) => setEditDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Masa</Label>
-                  <Input 
-                    type="time" 
-                    value={editTime}
-                    onChange={(e) => setEditTime(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Jenis</Label>
-                  <Select value={editType} onValueChange={(v) => setEditType(v as "in" | "out")}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in">Clock In</SelectItem>
-                      <SelectItem value="out">Clock Out</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={editStatus} onValueChange={setEditStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="on_time">Tepat Masa</SelectItem>
-                      <SelectItem value="late">Lewat</SelectItem>
-                      <SelectItem value="early_leave">Balik Awal</SelectItem>
-                      <SelectItem value="out_of_range">Luar Kawasan</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Nota</Label>
-                <Input 
-                  value={editNote}
-                  onChange={(e) => setEditNote(e.target.value)}
-                  placeholder="Nota tambahan..."
-                />
-              </div>
-              
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="flex-1" onClick={() => setEditingLog(null)}>
-                  Batal
-                </Button>
-                <Button className="flex-1 gap-2" onClick={handleSaveEdit}>
-                  <Save className="w-4 h-4" /> Simpan
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex-1 min-w-0">
+        {showActions && (
+          <p className="font-medium text-sm truncate">{log.staff_name}</p>
+        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-sm">
+            {new Date(log.timestamp).toLocaleString("ms-MY", { 
+              day: "2-digit", month: "short", year: "numeric",
+              hour: "2-digit", minute: "2-digit" 
+            })}
+          </p>
+          <Badge variant={log.location_status === "OK" ? "outline" : "destructive"} className="text-[10px] h-5">
+            {log.location_status}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">{STATUS_LABELS[log.status] || log.status}</p>
+        {log.note && <p className="text-[10px] italic mt-1 text-slate-500 truncate">"{log.note}"</p>}
+      </div>
+      {log.selfie_url && (
+        <div className="w-10 h-10 rounded-lg overflow-hidden border shrink-0">
+          <img src={log.selfie_url} className="w-full h-full object-cover" alt="Selfie" />
         </div>
       )}
+      {showActions && (
+        <div className="flex gap-1 shrink-0">
+          {deletingId === log.id ? (
+            <>
+              <Button size="icon" variant="ghost" onClick={() => handleDelete(log.id)} className="text-red-500 h-8 w-8">
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => setDeletingId(null)} className="h-8 w-8">
+                <X className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button size="icon" variant="ghost" onClick={() => setEditingLog(log)} className="h-8 w-8">
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => setDeletingId(log.id)} className="text-red-500 h-8 w-8">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -525,26 +369,24 @@ export function AttendanceContent() {
           </h2>
           <p className="text-muted-foreground">Sila clock in/out mengikut waktu kerja</p>
         </div>
-        {(isAdmin || isHR) && (
-          <Button variant="outline" size="sm" className="gap-2">
-            <SettingsIcon className="w-4 h-4" /> Tetapan Geofence
-          </Button>
-        )}
       </div>
 
-      <Tabs defaultValue="clock" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="clock">Clock In/Out</TabsTrigger>
-          <TabsTrigger value="history" onClick={fetchHistoryLogs}>Sejarah Saya</TabsTrigger>
-          {hasHRAccess && (
-            <TabsTrigger value="all-staff" onClick={fetchAllStaffLogs}>
-              <Users className="w-4 h-4 mr-1" /> Semua Staff
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full" style={{ gridTemplateColumns: canViewAllStaff ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)' }}>
+          <TabsTrigger value="clock" className="gap-2">
+            <Camera className="w-4 h-4" /> Clock In/Out
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2">
+            <History className="w-4 h-4" /> Sejarah Saya
+          </TabsTrigger>
+          {canViewAllStaff && (
+            <TabsTrigger value="all" className="gap-2">
+              <Users className="w-4 h-4" /> Semua Staff
             </TabsTrigger>
           )}
-          {!hasHRAccess && <TabsTrigger value="disabled" disabled>-</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="clock">
+        <TabsContent value="clock" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="border-2 border-emerald-100 dark:border-emerald-900/30">
               <CardHeader>
@@ -617,7 +459,7 @@ export function AttendanceContent() {
                     <Button 
                       size="lg" 
                       className="bg-emerald-600 hover:bg-emerald-700"
-                      onClick={() => handleClockAction("IN")}
+                      onClick={() => handleClockAction("in")}
                       disabled={loading || !selfie || !location}
                     >
                       CLOCK IN
@@ -626,7 +468,7 @@ export function AttendanceContent() {
                       size="lg" 
                       variant="outline"
                       className="border-emerald-600 text-emerald-600 hover:bg-emerald-50"
-                      onClick={() => handleClockAction("OUT")}
+                      onClick={() => handleClockAction("out")}
                       disabled={loading || !selfie || !location}
                     >
                       CLOCK OUT
@@ -644,13 +486,13 @@ export function AttendanceContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {myTodayLogs.length === 0 ? (
+                  {logs.length === 0 ? (
                     <div className="text-center py-12">
                       <Clock className="w-12 h-12 mx-auto text-slate-300 mb-2" />
                       <p className="text-slate-500 text-sm">Tiada rekod untuk hari ini</p>
                     </div>
                   ) : (
-                    myTodayLogs.map((log) => renderLogItem(log, false, false))
+                    logs.map((log) => renderLogCard(log))
                   )}
                 </div>
               </CardContent>
@@ -658,78 +500,108 @@ export function AttendanceContent() {
           </div>
         </TabsContent>
 
-        <TabsContent value="history">
+        <TabsContent value="history" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" /> Sejarah Kehadiran Saya
               </CardTitle>
-              <CardDescription>Pilih tarikh untuk melihat rekod kehadiran anda</CardDescription>
+              <CardDescription>Lihat rekod kehadiran anda mengikut tarikh</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4 mb-6">
-                <div className="flex-1 min-w-[150px]">
-                  <Label htmlFor="start-date">Dari Tarikh</Label>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs">Dari Tarikh</Label>
                   <Input 
-                    id="start-date"
                     type="date" 
-                    value={startDate}
+                    value={startDate} 
                     onChange={(e) => setStartDate(e.target.value)}
+                    className="w-40"
                   />
                 </div>
-                <div className="flex-1 min-w-[150px]">
-                  <Label htmlFor="end-date">Hingga Tarikh</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs">Hingga Tarikh</Label>
                   <Input 
-                    id="end-date"
                     type="date" 
-                    value={endDate}
+                    value={endDate} 
                     onChange={(e) => setEndDate(e.target.value)}
+                    className="w-40"
                   />
                 </div>
-                <div className="flex items-end">
-                  <Button onClick={fetchHistoryLogs} className="gap-2">
-                    <Search className="w-4 h-4" /> Cari
-                  </Button>
-                </div>
+                <Button onClick={fetchHistoryLogs} disabled={loading} variant="secondary">
+                  {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Cari"}
+                </Button>
               </div>
 
-              <div className="space-y-4">
-                {historyLogs.length === 0 ? (
+              <div className="space-y-3 mt-4">
+                {loading ? (
                   <div className="text-center py-12">
-                    <Clock className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                    <RefreshCw className="w-8 h-8 mx-auto text-slate-300 animate-spin" />
+                  </div>
+                ) : historyLogs.length === 0 ? (
+                  <div className="text-center py-12">
+                    <History className="w-12 h-12 mx-auto text-slate-300 mb-2" />
                     <p className="text-slate-500 text-sm">Tiada rekod dalam tempoh ini</p>
                   </div>
                 ) : (
-                  historyLogs.map((log) => renderLogItem(log, true, false))
+                  historyLogs.map((log) => renderLogCard(log))
                 )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {hasHRAccess && (
-          <TabsContent value="all-staff">
+        {canViewAllStaff && (
+          <TabsContent value="all" className="mt-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5" /> Kehadiran Semua Staff Hari Ini
+                    <Users className="w-5 h-5" /> Kehadiran Semua Staff
                   </CardTitle>
-                  <CardDescription>Pantau kehadiran semua staff (HR/Admin sahaja)</CardDescription>
+                  <CardDescription>Pantau dan uruskan kehadiran semua staff</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Download className="w-4 h-4" /> Export CSV
+                <Button variant="outline" size="sm" className="gap-2 shrink-0">
+                  <Download className="w-4 h-4" /> Export
                 </Button>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {allStaffLogs.length === 0 ? (
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-4 items-end">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Dari Tarikh</Label>
+                    <Input 
+                      type="date" 
+                      value={startDate} 
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-40"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Hingga Tarikh</Label>
+                    <Input 
+                      type="date" 
+                      value={endDate} 
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-40"
+                    />
+                  </div>
+                  <Button onClick={fetchAllStaffLogs} disabled={loading} variant="secondary">
+                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Cari"}
+                  </Button>
+                </div>
+
+                <div className="space-y-3 mt-4">
+                  {loading ? (
                     <div className="text-center py-12">
-                      <Clock className="w-12 h-12 mx-auto text-slate-300 mb-2" />
-                      <p className="text-slate-500 text-sm">Tiada rekod kehadiran hari ini</p>
+                      <RefreshCw className="w-8 h-8 mx-auto text-slate-300 animate-spin" />
+                    </div>
+                  ) : allLogs.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                      <p className="text-slate-500 text-sm">Tiada rekod dalam tempoh ini</p>
                     </div>
                   ) : (
-                    allStaffLogs.map((log) => renderLogItem(log, true, true))
+                    allLogs.map((log) => renderLogCard(log, true))
                   )}
                 </div>
               </CardContent>
@@ -737,6 +609,78 @@ export function AttendanceContent() {
           </TabsContent>
         )}
       </Tabs>
+
+      {editingLog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Pencil className="w-5 h-5" /> Edit Rekod Kehadiran
+              </CardTitle>
+              <CardDescription>{editingLog.staff_name}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Tarikh & Masa</Label>
+                <Input 
+                  type="datetime-local"
+                  value={editingLog.timestamp.slice(0, 16)}
+                  onChange={(e) => setEditingLog({...editingLog, timestamp: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Jenis</Label>
+                <Select 
+                  value={editingLog.type} 
+                  onValueChange={(v) => setEditingLog({...editingLog, type: v as "in" | "out"})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in">Clock In</SelectItem>
+                    <SelectItem value="out">Clock Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select 
+                  value={editingLog.status} 
+                  onValueChange={(v) => setEditingLog({...editingLog, status: v})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="on_time">Tepat Masa</SelectItem>
+                    <SelectItem value="late">Lewat</SelectItem>
+                    <SelectItem value="early_leave">Balik Awal</SelectItem>
+                    <SelectItem value="outside_geofence">Luar Kawasan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Nota</Label>
+                <Input 
+                  value={editingLog.note || ""}
+                  onChange={(e) => setEditingLog({...editingLog, note: e.target.value})}
+                  placeholder="Tambah nota..."
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={handleEdit} disabled={loading} className="flex-1">
+                  {loading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Simpan
+                </Button>
+                <Button variant="outline" onClick={() => setEditingLog(null)} className="flex-1">
+                  Batal
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
