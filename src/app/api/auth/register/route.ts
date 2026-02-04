@@ -5,7 +5,7 @@ import { hashPassword, generateToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, password, role = 'staff' } = body;
+    const { name, email, password } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         name,
         email: email.toLowerCase(),
         password: hashedPassword,
-        role: isFirstUser ? 'superadmin' : role,
+        role: isFirstUser ? 'superadmin' : 'staff',
         status: isFirstUser ? 'approved' : 'pending',
       })
       .select()
