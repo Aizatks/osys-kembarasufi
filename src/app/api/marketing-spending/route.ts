@@ -125,18 +125,19 @@ export async function POST(request: NextRequest) {
     
     const staffIdToUse = isImpersonating && viewingAsStaff ? viewingAsStaff.id : staff.id;
     
-    const { data, error } = await supabase
-      .from("marketing_spending")
-      .insert({
-        staff_id: staffIdToUse,
-        date: body.date,
-        platform: body.platform,
-        is_tiktok_live: body.is_tiktok_live || false,
-        nama_pakej: body.nama_pakej,
-        amount: body.amount || 0,
-      })
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from("marketing_spending")
+        .insert({
+          staff_id: staffIdToUse,
+          date: body.date,
+          platform: body.platform,
+          is_tiktok_live: body.is_tiktok_live || false,
+          nama_pakej: body.nama_pakej,
+          campaign_name: body.campaign_name || null,
+          amount: body.amount || 0,
+        })
+        .select()
+        .single();
     
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -164,19 +165,20 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
     
-    const { data, error } = await supabase
-      .from("marketing_spending")
-      .update({
-        date: body.date,
-        platform: body.platform,
-        is_tiktok_live: body.is_tiktok_live,
-        nama_pakej: body.nama_pakej,
-        amount: body.amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", body.id)
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from("marketing_spending")
+        .update({
+          date: body.date,
+          platform: body.platform,
+          is_tiktok_live: body.is_tiktok_live,
+          nama_pakej: body.nama_pakej,
+          campaign_name: body.campaign_name || null,
+          amount: body.amount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", body.id)
+        .select()
+        .single();
     
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

@@ -59,11 +59,18 @@ interface DashboardData {
   staff: { id: string; name: string; role: string }[];
 }
 
+interface Permission {
+  role: string;
+  view_id: string;
+  is_enabled: boolean;
+}
+
 export function DashboardContent() {
   const { token, user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   
   const [preset, setPreset] = useState<string>("month");
   const [dateFrom, setDateFrom] = useState<string>("");
@@ -101,14 +108,35 @@ export function DashboardContent() {
     } finally {
       setLoading(false);
     }
-  }, [token, preset, dateFrom, dateTo, staffId, showCustomDate]);
+    }, [token, preset, dateFrom, dateTo, staffId, showCustomDate]);
+
+  const fetchPermissions = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/settings/permissions', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPermissions(data.permissions || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch permissions:', err);
+    }
+  }, [token]);
 
   useEffect(() => {
     fetchDashboard();
-  }, [fetchDashboard]);
+    fetchPermissions();
+  }, [fetchDashboard, fetchPermissions]);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isSuperAdmin = user?.role === 'superadmin';
   const isMarketing = user?.role === 'marketing';
+  
+  const canViewAllStaff = isSuperAdmin || permissions.some(
+    p => p.role === user?.role && p.view_id === 'view-all-staff' && p.is_enabled
+  );
   
   if (!isAdmin && !isMarketing) {
     return (
@@ -230,7 +258,7 @@ export function DashboardContent() {
               </>
             )}
 
-            {!isMarketing && data?.staff && data.staff.length > 0 && activeTab === "general" && (
+            {canViewAllStaff && data?.staff && data.staff.length > 0 && activeTab === "general" && (
               <div className="space-y-1">
                 <Label className="text-xs">Staff</Label>
                 <Select value={staffId} onValueChange={setStaffId}>

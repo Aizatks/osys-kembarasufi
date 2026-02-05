@@ -615,7 +615,7 @@ export async function fetchSheetData(): Promise<MasterData> {
         'XIAN': { cwb: 4499, cwob: 4299, surcharge: 250 },
         'TAIWAN': { cwb: 3599, cwob: 3499, tip: 100, surcharge: 200 },
         'PAKISTAN': { cwb: 6199, cwob: 5999 },
-        'YUNNAN': { tip: 150 },
+        'YUNNAN': { adult: 4999, cwb: 4499, cwob: 4299, tip: 250 },
         'SPM': { cwob: 9599 },
         'SPAIN': { cwob: 9599 },
         'PORTUGAL': { cwob: 9599 },
@@ -627,6 +627,7 @@ export async function fetchSheetData(): Promise<MasterData> {
         const upperName = pkg.name.toUpperCase();
         for (const [pattern, overrides] of Object.entries(PRICE_OVERRIDES)) {
           if (upperName.includes(pattern)) {
+            if (overrides.adult !== undefined) pkg.prices.adult = overrides.adult;
             if (overrides.cwb !== undefined) pkg.prices.cwb = overrides.cwb;
             if (overrides.cwob !== undefined) pkg.prices.cwob = overrides.cwob;
             if (overrides.tip !== undefined) pkg.costs.tip = overrides.tip;

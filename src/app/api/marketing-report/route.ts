@@ -233,11 +233,22 @@ export async function GET(request: NextRequest) {
       return { key: formalName, stats: packageStats[formalName] };
     };
 
-    // Group Spending by Package (normalize to formal names)
-    spendingData?.forEach((s) => {
-      const { stats } = getPackageStats(s.nama_pakej);
-      stats.spending += Number(s.amount);
-    });
+      // Track campaign-only spending (no package)
+      const campaignSpending: { name: string; amount: number }[] = [];
+
+      // Group Spending by Package (normalize to formal names)
+      spendingData?.forEach((s) => {
+        // If no package but has campaign name, track separately
+        if (!s.nama_pakej && s.campaign_name) {
+          campaignSpending.push({ name: s.campaign_name, amount: Number(s.amount) });
+          return;
+        }
+        // Skip if no package name at all
+        if (!s.nama_pakej) return;
+        
+        const { stats } = getPackageStats(s.nama_pakej);
+        stats.spending += Number(s.amount);
+      });
 
     // Group Sales by Package (normalize to formal names)
     salesData?.forEach((s: any) => {
@@ -279,15 +290,16 @@ export async function GET(request: NextRequest) {
       };
     }).sort((a, b) => b.spending - a.spending);
 
-    return NextResponse.json({
-      overview: {
-        totalSpending: Object.values(platformStats).reduce((acc, curr) => acc + curr.spending, 0),
-        totalPax: salesData?.reduce((acc, curr) => acc + Number(curr.jumlah_pax || 0), 0) || 0,
-        totalLeads: allLeadsData?.length || 0,
-        platformStats
-      },
-      packageReport
-    });
+      return NextResponse.json({
+        overview: {
+          totalSpending: Object.values(platformStats).reduce((acc, curr) => acc + curr.spending, 0),
+          totalPax: salesData?.reduce((acc, curr) => acc + Number(curr.jumlah_pax || 0), 0) || 0,
+          totalLeads: allLeadsData?.length || 0,
+          platformStats
+        },
+        packageReport,
+        campaignSpending
+      });
   } catch (error) {
     console.error("Error generating marketing report:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

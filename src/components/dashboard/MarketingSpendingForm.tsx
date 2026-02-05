@@ -49,8 +49,13 @@ export function MarketingSpendingForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.nama_pakej || !formData.amount) {
-      toast.error("Sila isi semua maklumat");
+    if (!formData.amount) {
+      toast.error("Sila isi jumlah spending");
+      return;
+    }
+    
+    if (!formData.nama_pakej && !formData.campaign_name) {
+      toast.error("Sila pilih pakej ATAU isi nama kempen");
       return;
     }
 

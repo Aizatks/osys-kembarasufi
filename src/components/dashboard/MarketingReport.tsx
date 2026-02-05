@@ -12,6 +12,16 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, Users, Target, Wallet, BarChart3, PieChart, Edit2, Trash2, History } from "lucide-react";
 import { MarketingSpendingForm } from "./MarketingSpendingForm";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SpendingRecord {
   id: string;
@@ -19,6 +29,7 @@ interface SpendingRecord {
   platform: string;
   is_tiktok_live: boolean;
   nama_pakej: string;
+  campaign_name?: string;
   amount: number;
   staff?: { name: string };
 }
@@ -36,6 +47,11 @@ interface PackageReport {
   topCloser: string;
 }
 
+interface CampaignSpending {
+  name: string;
+  amount: number;
+}
+
 interface MarketingReportData {
   overview: {
     totalSpending: number;
@@ -44,6 +60,7 @@ interface MarketingReportData {
     platformStats: Record<string, PlatformStat>;
   };
   packageReport: PackageReport[];
+  campaignSpending?: CampaignSpending[];
 }
 
 export function MarketingReport({ dateFrom, dateTo }: { dateFrom?: string; dateTo?: string }) {
@@ -86,20 +103,31 @@ export function MarketingReport({ dateFrom, dateTo }: { dateFrom?: string; dateT
     fetchReport();
   }, [fetchReport]);
 
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (!confirm("Adakah anda pasti mahu memadam rekod ini?")) return;
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     
     try {
-      const res = await fetch(`/api/marketing-spending?id=${id}`, {
+      const res = await fetch(`/api/marketing-spending?id=${deleteId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         toast.success("Rekod berjaya dipadam");
         fetchReport();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Gagal memadam rekod");
       }
     } catch (error) {
       toast.error("Gagal memadam rekod");
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -119,7 +147,8 @@ export function MarketingReport({ dateFrom, dateTo }: { dateFrom?: string; dateT
   const cpLead = overview.totalLeads > 0 ? (overview.totalSpending / overview.totalLeads).toFixed(2) : "0";
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-slate-900 border-slate-800">
             <TabsTrigger value="report" className="text-slate-400 data-[state=active]:text-white data-[state=active]:bg-slate-800">Analisa Prestasi</TabsTrigger>
@@ -246,25 +275,52 @@ export function MarketingReport({ dateFrom, dateTo }: { dateFrom?: string; dateT
                     <TableHead className="text-slate-400">Top Closer</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {packageReport.map((pkg) => (
-                    <TableRow key={pkg.name} className="border-slate-800 hover:bg-slate-800/30">
-                      <TableCell className="font-medium">{pkg.name}</TableCell>
-                      <TableCell className="text-right">RM {pkg.spending.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-bold text-blue-400">{pkg.pax}</TableCell>
-                      <TableCell className="text-right text-orange-400">{pkg.leads}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-slate-800 text-slate-300 border-slate-700">
-                          {pkg.topCloser}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </ShadcnTable>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  <TableBody>
+                    {packageReport.map((pkg) => (
+                      <TableRow key={pkg.name} className="border-slate-800 hover:bg-slate-800/30">
+                        <TableCell className="font-medium">{pkg.name}</TableCell>
+                        <TableCell className="text-right">RM {pkg.spending.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-bold text-blue-400">{pkg.pax}</TableCell>
+                        <TableCell className="text-right text-orange-400">{pkg.leads}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-slate-800 text-slate-300 border-slate-700">
+                            {pkg.topCloser}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </ShadcnTable>
+              </CardContent>
+            </Card>
+
+            {/* Campaign Spending (non-package) */}
+            {data?.campaignSpending && data.campaignSpending.length > 0 && (
+              <Card className="bg-slate-900 text-white border-none overflow-hidden">
+                <CardHeader>
+                  <CardTitle>Kempen Lain (Bukan Pakej)</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 overflow-x-auto">
+                  <ShadcnTable>
+                    <TableHeader className="bg-slate-800/50">
+                      <TableRow className="border-slate-700 hover:bg-transparent">
+                        <TableHead className="text-slate-400">Nama Kempen</TableHead>
+                        <TableHead className="text-slate-400 text-right">Spending</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.campaignSpending.map((campaign, idx) => (
+                        <TableRow key={idx} className="border-slate-800 hover:bg-slate-800/30">
+                          <TableCell className="font-medium">{campaign.name}</TableCell>
+                          <TableCell className="text-right">RM {campaign.amount.toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </ShadcnTable>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
         <TabsContent value="history" className="mt-6">
           <Card className="bg-slate-900 text-white border-none overflow-hidden">
@@ -276,21 +332,21 @@ export function MarketingReport({ dateFrom, dateTo }: { dateFrom?: string; dateT
               <MarketingSpendingForm onSuccess={fetchReport} />
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
-              <ShadcnTable>
-                <TableHeader className="bg-slate-800/50">
-                  <TableRow className="border-slate-700 hover:bg-transparent">
-                    <TableHead className="text-slate-400">Tarikh</TableHead>
-                    <TableHead className="text-slate-400">Pakej</TableHead>
-                    <TableHead className="text-slate-400">Platform</TableHead>
-                    <TableHead className="text-slate-400 text-right">Jumlah (RM)</TableHead>
-                    <TableHead className="text-slate-400 text-right">Tindakan</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history.map((record) => (
-                    <TableRow key={record.id} className="border-slate-800 hover:bg-slate-800/30">
-                      <TableCell>{record.date}</TableCell>
-                      <TableCell className="font-medium">{record.nama_pakej}</TableCell>
+                <ShadcnTable>
+                  <TableHeader className="bg-slate-800/50">
+                    <TableRow className="border-slate-700 hover:bg-transparent">
+                      <TableHead className="text-slate-400">Tarikh</TableHead>
+                      <TableHead className="text-slate-400">Nama Kempen/Pakej</TableHead>
+                      <TableHead className="text-slate-400">Platform</TableHead>
+                      <TableHead className="text-slate-400 text-right">Jumlah (RM)</TableHead>
+                      <TableHead className="text-slate-400 text-right">Tindakan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {history.map((record) => (
+                      <TableRow key={record.id} className="border-slate-800 hover:bg-slate-800/30">
+                        <TableCell>{record.date}</TableCell>
+                        <TableCell className="font-medium">{record.campaign_name || record.nama_pakej || '-'}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="bg-slate-800 text-slate-300">
                           {record.platform} {record.is_tiktok_live && "(Live)"}
@@ -323,19 +379,43 @@ export function MarketingReport({ dateFrom, dateTo }: { dateFrom?: string; dateT
                     </TableRow>
                   ))}
                   {history.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 text-slate-500">
-                        Tiada rekod spending ditemui
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </ShadcnTable>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-10 text-slate-500">
+                          Tiada rekod spending ditemui
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </ShadcnTable>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent className="bg-slate-900 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Padam Rekod?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-800 text-white border-slate-700 hover:bg-slate-700">
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Padam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 

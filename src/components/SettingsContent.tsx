@@ -34,10 +34,11 @@ const ROLES = [
   "operation"
 ];
 const VIEWS = [
-  { id: "dashboard-overview", label: "Dashboard Overview" },
-  { id: "dashboard-sales", label: "Sales Report" },
-  { id: "dashboard-leads", label: "Lead Report" },
-  { id: "marketing-report", label: "Marketing Report" },
+    { id: "dashboard-overview", label: "Dashboard Overview" },
+    { id: "dashboard-sales", label: "Sales Report" },
+    { id: "dashboard-leads", label: "Lead Report" },
+    { id: "marketing-report", label: "Marketing Report" },
+    { id: "view-all-staff", label: "Lihat Semua Staff (Dropdown)" },
   { id: "staff", label: "Pengurusan Staff" },
   { id: "quotations", label: "Sebut Harga" },
   { id: "activity-logs", label: "Log Aktiviti" },
