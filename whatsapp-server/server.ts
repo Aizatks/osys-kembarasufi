@@ -217,12 +217,12 @@ class WhatsAppManager {
     return 'application/octet-stream';
   }
 
-  private async saveMessage(staffId: string, remoteJid: string, fromMe: boolean, pushName: string, text: string, messageType: string, timestamp: string, mediaUrl?: string | null) {
+  private async saveMessage(staffId: string, remoteJid: string, fromMe: boolean, pushName: string, text: string, messageType: string, timestamp: string, mediaUrl?: string | null, senderJid?: string | null) {
     try {
       const { error } = await supabaseAdmin.from('whatsapp_messages').insert({
         staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
         text, message_type: messageType, timestamp, contact_name: pushName,
-        status: 'delivered', media_url: mediaUrl || null,
+        status: 'delivered', media_url: mediaUrl || null, sender_jid: senderJid || null,
       });
       if (error) console.error('[WA] Supabase insert error:', error.message);
     } catch (err) { console.error('[WA] Error saving message:', err); }
@@ -447,12 +447,13 @@ class WhatsAppManager {
             const text = this.extractText(msg);
             if (!text) continue;
             const fromMe = msg.key?.fromMe || false;
-            const pushName = msg.pushName || '';
-            batch.push({
-              staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
-              text, message_type: this.getMessageType(msg), timestamp: ts.toISOString(),
-              contact_name: pushName, status: 'synced',
-            });
+              const pushName = msg.pushName || '';
+              const senderJid = msg.key?.participant || (fromMe ? null : remoteJid);
+              batch.push({
+                staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
+                text, message_type: this.getMessageType(msg), timestamp: ts.toISOString(),
+                contact_name: pushName, status: 'synced', sender_jid: senderJid,
+              });
           }
           if (batch.length > 0) {
             for (let i = 0; i < batch.length; i += 100) {
@@ -484,9 +485,10 @@ class WhatsAppManager {
           if (!text) continue;
           const ts = msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000).toISOString() : new Date().toISOString();
           let mediaUrl: string | null = null;
-          if (this.hasDownloadableMedia(msg)) mediaUrl = await this.uploadMedia(staffId, msg);
-          await this.saveMessage(staffId, remoteJid, fromMe, pushName, text, this.getMessageType(msg), ts, mediaUrl);
-          if (pushName && !/^\d+$/.test(pushName) && pushName.length >= 2) {
+            if (this.hasDownloadableMedia(msg)) mediaUrl = await this.uploadMedia(staffId, msg);
+            const senderJid = msg.key?.participant || (fromMe ? null : remoteJid);
+            await this.saveMessage(staffId, remoteJid, fromMe, pushName, text, this.getMessageType(msg), ts, mediaUrl, senderJid);
+            if (pushName && !/^\d+$/.test(pushName) && pushName.length >= 2) {
             const contactJid = fromMe ? remoteJid : (msg.key?.participant || remoteJid);
             if (contactJid && contactJid.includes('@s.whatsapp.net')) {
               await supabaseAdmin.from('whatsapp_contacts').upsert({
@@ -560,49 +562,49 @@ class WhatsAppManager {
   private async syncContactNamesFromMessages(staffId: string) {
       try {
         const { data: msgs } = await supabaseAdmin.from('whatsapp_messages')
-          .select('remote_jid, push_name, contact_name')
+          .select('remote_jid, push_name, contact_name, sender_jid')
           .eq('staff_id', staffId)
           .eq('from_me', false)
-          .like('remote_jid', '%@s.whatsapp.net')
           .not('push_name', 'is', null)
           .order('timestamp', { ascending: false })
           .limit(5000);
         if (!msgs) return;
         const nameMap = new Map<string, string>();
         for (const m of msgs) {
-          if (!nameMap.has(m.remote_jid)) {
+          const jid = m.sender_jid || m.remote_jid;
+          if (!jid || !jid.includes('@s.whatsapp.net')) continue;
+          if (!nameMap.has(jid)) {
             const name = m.push_name || m.contact_name;
             if (name && !/^\d+$/.test(name) && name.length >= 2) {
-              nameMap.set(m.remote_jid, name);
+              nameMap.set(jid, name);
             }
           }
         }
         console.log(`[WA] Found ${nameMap.size} contact names from messages for ${staffId}`);
+        if (nameMap.size === 0) return;
         const { data: existingContacts } = await supabaseAdmin.from('whatsapp_contacts')
           .select('jid, name, notify')
           .eq('staff_id', staffId)
           .in('jid', [...nameMap.keys()]);
-        const needsUpdate: { staff_id: string; jid: string; notify: string }[] = [];
-        const needsInsert: { staff_id: string; jid: string; notify: string }[] = [];
         const existingMap = new Map<string, any>();
         for (const c of existingContacts || []) existingMap.set(c.jid, c);
+        const toUpsert: { staff_id: string; jid: string; notify: string }[] = [];
         for (const [jid, pushName] of nameMap) {
           const existing = existingMap.get(jid);
           if (!existing) {
-            needsInsert.push({ staff_id: staffId, jid, notify: pushName });
+            toUpsert.push({ staff_id: staffId, jid, notify: pushName });
           } else if (!existing.name && !existing.notify) {
-            needsUpdate.push({ staff_id: staffId, jid, notify: pushName });
+            toUpsert.push({ staff_id: staffId, jid, notify: pushName });
+          } else if (!existing.name && existing.notify) {
+            toUpsert.push({ staff_id: staffId, jid, notify: pushName });
           }
         }
-        if (needsInsert.length > 0) {
-          for (let i = 0; i < needsInsert.length; i += 100) {
-            await supabaseAdmin.from('whatsapp_contacts').upsert(needsInsert.slice(i, i + 100), { onConflict: 'staff_id,jid' });
+        if (toUpsert.length > 0) {
+          for (let i = 0; i < toUpsert.length; i += 100) {
+            await supabaseAdmin.from('whatsapp_contacts').upsert(toUpsert.slice(i, i + 100), { onConflict: 'staff_id,jid' });
           }
         }
-        for (const item of needsUpdate) {
-          await supabaseAdmin.from('whatsapp_contacts').update({ notify: item.notify }).eq('staff_id', staffId).eq('jid', item.jid);
-        }
-        console.log(`[WA] Updated ${needsUpdate.length} contacts, inserted ${needsInsert.length} new contacts from message names`);
+        console.log(`[WA] Updated/inserted ${toUpsert.length} contacts from message names`);
       } catch (err) { console.error('[WA] Contact names sync error:', err); }
     }
 
@@ -816,21 +818,49 @@ app.get('/api/whatsapp/messages', async (req, res) => {
   const threeMonthsAgo = new Date();
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-  if (jid && staffId) {
-    const { data: rawData, error } = await supabaseAdmin.from('whatsapp_messages').select('*').eq('staff_id', staffId).eq('remote_jid', jid).gte('timestamp', threeMonthsAgo.toISOString()).order('timestamp', { ascending: false }).limit(500);
-    const data = (rawData || []).reverse();
-    if (error) return res.status(500).json({ error: error.message });
-    const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('name, notify, picture_url').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
-    const contactName = contact?.name || contact?.notify || null;
-    const contactNumber = jid.replace('@s.whatsapp.net', '').replace('@g.us', '');
-    const messages = (data || []).map((msg: any) => ({
-      id: msg.id, staff_id: msg.staff_id, jid: msg.remote_jid,
-      sender_name: contactName || msg.push_name || msg.contact_name || contactNumber,
-      sender_number: contactNumber, message_text: msg.text || '', message_type: msg.message_type || 'text',
-      media_url: msg.media_url || null, is_from_me: msg.from_me, timestamp: msg.timestamp,
-    }));
-    return res.json({ messages, contact_name: contactName, picture_url: contact?.picture_url || null });
-  }
+    if (jid && staffId) {
+      const { data: rawData, error } = await supabaseAdmin.from('whatsapp_messages').select('*').eq('staff_id', staffId).eq('remote_jid', jid).gte('timestamp', threeMonthsAgo.toISOString()).order('timestamp', { ascending: false }).limit(500);
+      const data = (rawData || []).reverse();
+      if (error) return res.status(500).json({ error: error.message });
+      const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('name, notify, picture_url').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
+      const contactName = contact?.name || contact?.notify || null;
+      const contactNumber = jid.replace('@s.whatsapp.net', '').replace('@g.us', '');
+      const isGroup = jid.includes('@g.us');
+
+      let senderNameMap: Record<string, string> = {};
+      if (isGroup) {
+        const senderJids = [...new Set((data || []).filter((m: any) => m.sender_jid).map((m: any) => m.sender_jid))];
+        if (senderJids.length > 0) {
+          for (let i = 0; i < senderJids.length; i += 100) {
+            const chunk = senderJids.slice(i, i + 100);
+            const { data: senderContacts } = await supabaseAdmin.from('whatsapp_contacts').select('jid, name, notify').eq('staff_id', staffId).in('jid', chunk);
+            for (const sc of senderContacts || []) {
+              senderNameMap[sc.jid] = sc.name || sc.notify || '';
+            }
+          }
+        }
+      }
+
+      const messages = (data || []).map((msg: any) => {
+        let senderName: string;
+        if (msg.is_from_me || msg.from_me) {
+          senderName = 'You';
+        } else if (isGroup) {
+          const sJid = msg.sender_jid || '';
+          senderName = senderNameMap[sJid] || msg.push_name || msg.contact_name || sJid.replace('@s.whatsapp.net', '') || contactNumber;
+        } else {
+          senderName = contactName || msg.push_name || msg.contact_name || contactNumber;
+        }
+        return {
+          id: msg.id, staff_id: msg.staff_id, jid: msg.remote_jid,
+          sender_name: senderName,
+          sender_number: msg.sender_jid ? msg.sender_jid.replace('@s.whatsapp.net', '') : contactNumber,
+          message_text: msg.text || '', message_type: msg.message_type || 'text',
+          media_url: msg.media_url || null, is_from_me: msg.from_me, timestamp: msg.timestamp,
+        };
+      });
+      return res.json({ messages, contact_name: contactName, picture_url: contact?.picture_url || null });
+    }
 
   if (!staffId) return res.status(400).json({ error: 'staffId required' });
 
@@ -909,10 +939,16 @@ app.post('/api/whatsapp/contacts', async (req, res) => {
     return res.json(result);
   }
   if (action === 'save' && jid) {
-    const { error } = await supabaseAdmin.from('whatsapp_contacts').upsert({ staff_id: staffId, jid, name: name || null }, { onConflict: 'staff_id,jid' });
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ saved: true });
-  }
+      const { data: existing } = await supabaseAdmin.from('whatsapp_contacts').select('jid').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
+      if (existing) {
+        const { error } = await supabaseAdmin.from('whatsapp_contacts').update({ name: name || null }).eq('staff_id', staffId).eq('jid', jid);
+        if (error) return res.status(500).json({ error: error.message });
+      } else {
+        const { error } = await supabaseAdmin.from('whatsapp_contacts').insert({ staff_id: staffId, jid, name: name || null });
+        if (error) return res.status(500).json({ error: error.message });
+      }
+      return res.json({ saved: true });
+    }
   res.status(400).json({ error: 'Invalid action' });
 });
 

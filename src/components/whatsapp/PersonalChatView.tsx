@@ -187,14 +187,14 @@ export function PersonalChatView() {
         body: JSON.stringify({ staffId, action: "save", jid: selectedChat.jid, name: editName }),
       });
       if (res.ok) {
-        toast.success("Kenalan disimpan");
-        setSelectedChat(prev => prev ? { ...prev, contact_name: editName || prev.contact_name } : prev);
-        if (contactProfile) setContactProfile({ ...contactProfile, name: editName });
-      } else {
-        toast.error("Gagal menyimpan kenalan");
-      }
-    } catch {
-      toast.error("Ralat berlaku");
+          toast.success("Contact saved");
+          setSelectedChat(prev => prev ? { ...prev, contact_name: editName || prev.contact_name } : prev);
+          if (contactProfile) setContactProfile({ ...contactProfile, name: editName });
+        } else {
+          toast.error("Failed to save contact");
+        }
+      } catch {
+        toast.error("An error occurred");
     } finally {
       setSavingContact(false);
     }
@@ -375,7 +375,7 @@ export function PersonalChatView() {
     return (
       <div className="w-80 border-l bg-white dark:bg-slate-900 flex flex-col h-full shrink-0 overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b">
-            <h3 className="font-semibold text-sm">{selectedChat.jid.includes("@g.us") ? "Group Info" : "Info Kenalan"}</h3>
+            <h3 className="font-semibold text-sm">{selectedChat.jid.includes("@g.us") ? "Group Info" : "Contact Info"}</h3>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowContactInfo(false)}>
             <X className="w-4 h-4" />
           </Button>
@@ -407,7 +407,7 @@ export function PersonalChatView() {
 
             {!isGroup && (
               <div className="px-4 py-3 border-b">
-                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Simpan Kenalan</p>
+                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Save Contact Name</p>
                 <div className="flex gap-2">
                   <Input
                     value={editName}
@@ -426,7 +426,7 @@ export function PersonalChatView() {
               <div className="px-4 py-3 border-b">
                 <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Nombor Telefon</p>
                 <button
-                  onClick={() => { navigator.clipboard.writeText(phone); toast.success("Nombor disalin"); }}
+                  onClick={() => { navigator.clipboard.writeText(phone); toast.success("Number copied"); }}
                   className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
                 >
                   <Phone className="w-3.5 h-3.5" /> +{phone}
