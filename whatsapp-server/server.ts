@@ -557,27 +557,61 @@ class WhatsAppManager {
     }
   }
 
-  private async syncContactNamesFromGroupMessages(staffId: string) {
-    try {
-      const { data: personalJids } = await supabaseAdmin.from('whatsapp_messages').select('remote_jid').eq('staff_id', staffId).like('remote_jid', '%@s.whatsapp.net').limit(1000);
-      if (!personalJids) return;
-      const uniqueJids = [...new Set(personalJids.map(r => r.remote_jid))];
-      const batch = uniqueJids.map(jid => ({ staff_id: staffId, jid, name: null, notify: null }));
-      if (batch.length > 0) {
-        for (let i = 0; i < batch.length; i += 100) {
-          await supabaseAdmin.from('whatsapp_contacts').upsert(batch.slice(i, i + 100), { onConflict: 'staff_id,jid', ignoreDuplicates: true });
+  private async syncContactNamesFromMessages(staffId: string) {
+      try {
+        const { data: msgs } = await supabaseAdmin.from('whatsapp_messages')
+          .select('remote_jid, push_name, contact_name')
+          .eq('staff_id', staffId)
+          .eq('from_me', false)
+          .like('remote_jid', '%@s.whatsapp.net')
+          .not('push_name', 'is', null)
+          .order('timestamp', { ascending: false })
+          .limit(5000);
+        if (!msgs) return;
+        const nameMap = new Map<string, string>();
+        for (const m of msgs) {
+          if (!nameMap.has(m.remote_jid)) {
+            const name = m.push_name || m.contact_name;
+            if (name && !/^\d+$/.test(name) && name.length >= 2) {
+              nameMap.set(m.remote_jid, name);
+            }
+          }
         }
-        console.log(`[WA] Ensured ${batch.length} personal contacts exist`);
-      }
-    } catch (err) { console.error('[WA] Contact names sync error:', err); }
-  }
+        console.log(`[WA] Found ${nameMap.size} contact names from messages for ${staffId}`);
+        const { data: existingContacts } = await supabaseAdmin.from('whatsapp_contacts')
+          .select('jid, name, notify')
+          .eq('staff_id', staffId)
+          .in('jid', [...nameMap.keys()]);
+        const needsUpdate: { staff_id: string; jid: string; notify: string }[] = [];
+        const needsInsert: { staff_id: string; jid: string; notify: string }[] = [];
+        const existingMap = new Map<string, any>();
+        for (const c of existingContacts || []) existingMap.set(c.jid, c);
+        for (const [jid, pushName] of nameMap) {
+          const existing = existingMap.get(jid);
+          if (!existing) {
+            needsInsert.push({ staff_id: staffId, jid, notify: pushName });
+          } else if (!existing.name && !existing.notify) {
+            needsUpdate.push({ staff_id: staffId, jid, notify: pushName });
+          }
+        }
+        if (needsInsert.length > 0) {
+          for (let i = 0; i < needsInsert.length; i += 100) {
+            await supabaseAdmin.from('whatsapp_contacts').upsert(needsInsert.slice(i, i + 100), { onConflict: 'staff_id,jid' });
+          }
+        }
+        for (const item of needsUpdate) {
+          await supabaseAdmin.from('whatsapp_contacts').update({ notify: item.notify }).eq('staff_id', staffId).eq('jid', item.jid);
+        }
+        console.log(`[WA] Updated ${needsUpdate.length} contacts, inserted ${needsInsert.length} new contacts from message names`);
+      } catch (err) { console.error('[WA] Contact names sync error:', err); }
+    }
 
   async triggerSync(staffId: string) {
     const sock = this.instances.get(staffId);
     if (!sock) return false;
     await this.syncGroupsMetadata(staffId, sock);
     await this.syncContactsFromStore(staffId, sock);
-    await this.syncContactNamesFromGroupMessages(staffId);
+    await this.syncContactNamesFromMessages(staffId);
     const { data: contacts } = await supabaseAdmin.from('whatsapp_contacts').select('jid').eq('staff_id', staffId).is('picture_url', null).limit(200);
     const jidsToFetch = contacts?.map(c => c.jid) || [];
     if (jidsToFetch.length > 0) this.fetchProfilePictures(staffId, sock, jidsToFetch);
@@ -600,8 +634,8 @@ class WhatsAppManager {
     const sock = this.instances.get(staffId);
     if (!sock) return { synced: false, error: 'Not connected' };
     await this.syncContactsFromStore(staffId, sock);
-    await this.syncGroupsMetadata(staffId, sock);
-    await this.syncContactNamesFromGroupMessages(staffId);
+      await this.syncGroupsMetadata(staffId, sock);
+      await this.syncContactNamesFromMessages(staffId);
     const { data: contacts } = await supabaseAdmin.from('whatsapp_contacts').select('jid').eq('staff_id', staffId).is('picture_url', null).limit(200);
     const jidsToFetch = contacts?.map(c => c.jid) || [];
     if (jidsToFetch.length > 0) this.fetchProfilePictures(staffId, sock, jidsToFetch);
@@ -609,37 +643,68 @@ class WhatsAppManager {
   }
 
   async getContactProfile(staffId: string, jid: string) {
-    const sock = this.instances.get(staffId);
-    let pictureUrl: string | null = null;
-    let status: string | null = null;
-    if (sock) {
-      try { pictureUrl = await sock.profilePictureUrl(jid, 'image'); } catch {}
-      try { const s = await sock.fetchStatus(jid); status = s?.status || null; } catch {}
-    }
-    const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('*').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
-    if (pictureUrl && contact) {
-      await supabaseAdmin.from('whatsapp_contacts').update({ picture_url: pictureUrl }).eq('staff_id', staffId).eq('jid', jid);
-    }
-    const { data: sharedGroups } = await supabaseAdmin.from('whatsapp_messages').select('remote_jid').eq('staff_id', staffId).like('remote_jid', '%@g.us').limit(5000);
-    const groupJids = [...new Set((sharedGroups || []).map(m => m.remote_jid))];
-    const groups: { jid: string; name: string }[] = [];
-    if (sock && groupJids.length > 0) {
-      for (const gjid of groupJids.slice(0, 50)) {
-        try {
-          const meta = await sock.groupMetadata(gjid);
-          const isMember = meta?.participants?.some((p: any) => p.id === jid);
-          if (isMember) groups.push({ jid: gjid, name: meta.subject || gjid });
-        } catch {}
+      const sock = this.instances.get(staffId);
+      const isGroup = jid.includes('@g.us');
+      let pictureUrl: string | null = null;
+      let status: string | null = null;
+      let groupMembers: { jid: string; name: string | null; phone: string; admin: string | null }[] = [];
+      let groupSubject: string | null = null;
+
+      if (sock) {
+        try { pictureUrl = await sock.profilePictureUrl(jid, 'image'); } catch {}
+        if (!isGroup) {
+          try { const s = await sock.fetchStatus(jid); status = s?.status || null; } catch {}
+        }
+        if (isGroup) {
+          try {
+            const meta = await sock.groupMetadata(jid);
+            groupSubject = meta?.subject || null;
+            if (meta?.participants) {
+              const participantJids = meta.participants.map((p: any) => p.id);
+              const { data: contactNames } = await supabaseAdmin.from('whatsapp_contacts')
+                .select('jid, name, notify')
+                .eq('staff_id', staffId)
+                .in('jid', participantJids);
+              const nameMap = new Map<string, string>();
+              for (const c of contactNames || []) {
+                if (c.name || c.notify) nameMap.set(c.jid, c.name || c.notify);
+              }
+              groupMembers = meta.participants.map((p: any) => ({
+                jid: p.id,
+                name: nameMap.get(p.id) || null,
+                phone: p.id.replace('@s.whatsapp.net', ''),
+                admin: p.admin || null,
+              }));
+            }
+          } catch (err) { console.error('[WA] Group metadata error:', err); }
+        }
       }
+      const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('*').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
+      if (pictureUrl && contact) {
+        await supabaseAdmin.from('whatsapp_contacts').update({ picture_url: pictureUrl }).eq('staff_id', staffId).eq('jid', jid);
+      }
+      const groups: { jid: string; name: string }[] = [];
+      if (!isGroup) {
+        const { data: sharedGroups } = await supabaseAdmin.from('whatsapp_messages').select('remote_jid').eq('staff_id', staffId).like('remote_jid', '%@g.us').limit(5000);
+        const groupJids = [...new Set((sharedGroups || []).map(m => m.remote_jid))];
+        if (sock && groupJids.length > 0) {
+          for (const gjid of groupJids.slice(0, 50)) {
+            try {
+              const meta = await sock.groupMetadata(gjid);
+              const isMember = meta?.participants?.some((p: any) => p.id === jid);
+              if (isMember) groups.push({ jid: gjid, name: meta.subject || gjid });
+            } catch {}
+          }
+        }
+      }
+      const { count: mediaCount } = await supabaseAdmin.from('whatsapp_messages').select('*', { count: 'exact', head: true }).eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video', 'document']);
+      const { data: recentMedia } = await supabaseAdmin.from('whatsapp_messages').select('id, media_url, message_type, timestamp').eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video']).not('media_url', 'is', null).order('timestamp', { ascending: false }).limit(12);
+      return {
+        jid, name: groupSubject || contact?.name || contact?.notify || null, notify: contact?.notify || null,
+        picture_url: pictureUrl || contact?.picture_url || null, status, phone: jid.replace('@s.whatsapp.net', '').replace('@g.us', ''),
+        groups, group_members: groupMembers, media_count: mediaCount || 0, recent_media: recentMedia || [],
+      };
     }
-    const { count: mediaCount } = await supabaseAdmin.from('whatsapp_messages').select('*', { count: 'exact', head: true }).eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video', 'document']);
-    const { data: recentMedia } = await supabaseAdmin.from('whatsapp_messages').select('id, media_url, message_type, timestamp').eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video']).not('media_url', 'is', null).order('timestamp', { ascending: false }).limit(12);
-    return {
-      jid, name: contact?.name || contact?.notify || null, notify: contact?.notify || null,
-      picture_url: pictureUrl || contact?.picture_url || null, status, phone: jid.replace('@s.whatsapp.net', ''),
-      groups, media_count: mediaCount || 0, recent_media: recentMedia || [],
-    };
-  }
 
   async autoReconnectAll() {
     const { data: sessions } = await supabaseAdmin.from('whatsapp_sessions').select('staff_id').in('status', ['connected', 'reconnecting']);
