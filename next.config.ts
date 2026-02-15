@@ -23,11 +23,21 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  serverExternalPackages: ['@whiskeysockets/baileys', 'pino']
+  serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'jimp', 'sharp'],
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        jimp: false,
+        sharp: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
-// Orchids restart: 1770221575618
+// Orchids restart: 1771157295160
 // Restart: Thu Jan 29 18:52:42 UTC 2026
 // Restart: Thu Jan 29 18:53:28 UTC 2026
 // Sync: 1769712825

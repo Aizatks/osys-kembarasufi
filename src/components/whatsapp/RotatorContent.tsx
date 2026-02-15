@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { waUrl } from "@/lib/wa-client";
 import { cn } from "@/lib/utils";
 
 interface Rotator {
@@ -76,7 +77,7 @@ export function RotatorContent() {
 
   const fetchRotators = async () => {
     try {
-      const res = await fetch("/api/whatsapp/rotator");
+      const res = await fetch(waUrl("/api/whatsapp/rotator"));
       if (res.ok) {
         const data = await res.json();
         setRotators(data.rotators || []);
@@ -95,7 +96,7 @@ export function RotatorContent() {
     }
 
     try {
-      const res = await fetch("/api/whatsapp/rotator", {
+      const res = await fetch(waUrl("/api/whatsapp/rotator"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newRotator)

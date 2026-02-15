@@ -1,0 +1,336 @@
+2026-02-14T14:25:08.026Z [console][error] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [ec380579-9974-449b-85de-948f2b1aaa28] [ec380579-9974-449b-85de-948f2b1aaa28, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJlYzM4MDU3OS05OTc0LTQ0OWItODVkZS05NDhmMmIxYWFhMjgiLCJlbWFpbCI6ImtlbWJhcmFzdWZpc21tQGdtYWlsLmNvbSIsIm5hbWUiOiJBZmlxIEFpemF0Iiwicm9sZSI6InN1cGVyYWRtaW4iLCJpYXQiOjE3NzEwNzUwODUsImV4cCI6MTc3MTE2MTQ4NX0.xMxyRJTWLlqs0xKtv2f2ehnIisYmjjeCiuk3U9QWBGs]
+2026-02-14T14:30:28.115Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:30:33.159Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:30:42.593Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:30:43.186Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:30:48.308Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:30:52.772Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:30:57.851Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:02.776Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:08.117Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:12.856Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:17.965Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:23.187Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:28.288Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:33.108Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:38.035Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:42.821Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:47.966Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:52.801Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:31:57.828Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:02.842Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:07.799Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:13.172Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:18.020Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:23.130Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:28.107Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:33.161Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:38.021Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:42.897Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:47.871Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:32:52.814Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:35:57.775Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:36:02.686Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:36:07.639Z [network][GET 502] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head><script>(function(){
+if(window.__ORCHIDS_PROXY_INJECTED__)return;
+window.__ORCHIDS_PROXY_INJECTED__=true;
+if(window.parent===window)return;
+function s(p){try{window.parent.postMessage(p,"*")}catch(e){}}
+
+/* ── Error capture ─────────────────────────────────────────────── */
+window.addEventListener("error",function(e){s({type:"ERROR_CAPTURED",error:{message:e.message,stack:e.error&&e.error.stack,filename:e.filename,lineno:e.lineno,colno:e.colno,source:"window.onerror"},timestamp:Date.now()})});
+window.addEventListener("unhandledrejection",function(e){var r=e.reason;s({type:"ERROR_CAPTURED",error:{message:r&&r.message?r.message:String(r),stack:r&&r.stack,source:"unhandledrejection"},timestamp:Date.now()})});
+var EID=["_expo-static-error","error-overlay","orchids-error-boundary"];
+function chk(){
+var el,txt;
+el=document.getElementById("_expo-static-error");
+if(el&&el.textContent){s({type:"ERROR_CAPTURED",error:{message:el.textContent.slice(0,5000),source:"expo-static-error"},timestamp:Date.now()})}
+el=document.getElementById("error-overlay");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"expo-overlay"},timestamp:Date.now()})}
+el=document.getElementById("orchids-error-boundary");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"orchids-error-boundary"},timestamp:Date.now()})}
+}
+function obs(root){
+new MutationObserver(function(muts){
+for(var i=0;i<muts.length;i++){for(var j=0;j<muts[i].addedNodes.length;j++){var n=muts[i].addedNodes[j];
+if(n.nodeType===1&&(EID.indexOf(n.id)!==-1||(n.querySelector&&n.querySelector("#_expo-sta... [truncated]
+2026-02-14T14:36:12.655Z [network][GET 502] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head><script>(function(){
+if(window.__ORCHIDS_PROXY_INJECTED__)return;
+window.__ORCHIDS_PROXY_INJECTED__=true;
+if(window.parent===window)return;
+function s(p){try{window.parent.postMessage(p,"*")}catch(e){}}
+
+/* ── Error capture ─────────────────────────────────────────────── */
+window.addEventListener("error",function(e){s({type:"ERROR_CAPTURED",error:{message:e.message,stack:e.error&&e.error.stack,filename:e.filename,lineno:e.lineno,colno:e.colno,source:"window.onerror"},timestamp:Date.now()})});
+window.addEventListener("unhandledrejection",function(e){var r=e.reason;s({type:"ERROR_CAPTURED",error:{message:r&&r.message?r.message:String(r),stack:r&&r.stack,source:"unhandledrejection"},timestamp:Date.now()})});
+var EID=["_expo-static-error","error-overlay","orchids-error-boundary"];
+function chk(){
+var el,txt;
+el=document.getElementById("_expo-static-error");
+if(el&&el.textContent){s({type:"ERROR_CAPTURED",error:{message:el.textContent.slice(0,5000),source:"expo-static-error"},timestamp:Date.now()})}
+el=document.getElementById("error-overlay");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"expo-overlay"},timestamp:Date.now()})}
+el=document.getElementById("orchids-error-boundary");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"orchids-error-boundary"},timestamp:Date.now()})}
+}
+function obs(root){
+new MutationObserver(function(muts){
+for(var i=0;i<muts.length;i++){for(var j=0;j<muts[i].addedNodes.length;j++){var n=muts[i].addedNodes[j];
+if(n.nodeType===1&&(EID.indexOf(n.id)!==-1||(n.querySelector&&n.querySelector("#_expo-sta... [truncated]
+2026-02-14T14:36:18.968Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:36:22.705Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:36:27.831Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:36:33.129Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:36:38.186Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"disconnected","qr":null,"pairingCode":null}
+2026-02-14T14:36:38.865Z [network][POST 200] /api/whatsapp/connect
+  request: {"staffId":"ec380579-9974-449b-85de-948f2b1aaa28"}
+  response: {"success":true}
+2026-02-14T14:36:43.357Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"qr_ready","qr":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAAEUCAYAAADqcMl5AAAAAklEQVR4AewaftIAABJ1SURBVO3BQY4gx7LgQDJR978yp5e++QEkMqolvXEz+4O11rrgYa21LnlYa61LHtZa65KHtda65GGttS55WGutSx7WWuuSh7XWuuRhrbUueVhrrUse1lrrkoe11rrkYa21LnlYa61LHtZa65IfPlL5mypOVKaKSeWmit+k8kbFGyonFZPKVPGGyknFicrfVDGpTBVvqJxUTCp/U8UXD2utdcnDWmtd8rDWWpf8cFnFTSpvVJxUTCpTxYnKpPJGxYnKb1L5ouINlS9UTiomlaliUpkqTlTeUJkqbqq4SeWmh7XWuuRhrbUueVhrrUt++GUqb1S8oTJVTCpTxVRxonJScaLyRcWJyhsVk8qJyknFFxVvVEwqJyonKl+oTBWTym9SeaPiNz2stdYlD2utdcnDWmtd8sP/Z1SmijcqJpWp4kTlN6lMFScVk8pJxU0qU8VUcVIxqZxUnKh8oXJSMan8L3lYa61LHtZa65KHtda65If/MSo3VUwqb1RMKlPFpDKpTBVTxRcqb6i8UfGGylQxqUwVU8WkcqIyVbyhMlVMKpPKVPG/5GGttS55WGutSx7WWuuSH35ZxT+pYlI5UZkqpooTlaliqphUpooTlTcqJpWTijdUpopJ5aRiqvhCZao4qZhUTipOVE4qbqr4N3lYa61LHtZa65KHtda65IfLVP5JFZPKVDGpTBWTylQxqUwVk8pU8YbKVDGpTBWTylQxqZyoTBVfVEwqU8WkMlVMKlPFpDJVTCpTxaTyRsWkcqIyVZyo/Js9rLXWJQ9rrXXJw1prXWJ/8B+m8kXFGyo3VZyoTBWTyk0Vb6j8popJZap4Q2WqmFROKtb/7WGttS55WGutSx7WWuuSHz5SmSomlZsqpooTlaniRGWqeKPiRGVSmSpuqjhRmVS+qDhReUNlqjhR+aLiROWNiknlpGJSuaniNz2stdYlD2utdcnDWmtd8sMvq5hUTireUJkqvqg4qZhUblI5UZkqTlSmiqliUjmp+E0Vb6h8oTJVvFExqZxU/E0Vk8pUcdPDWmtd8rDWWpc8rLXWJfYHv0hlqnhDZaqYVL6o+EJlqphUpopJ5aTiRGWqOFGZKiaVNypOVG6qmFR+U8WJylQxqXxRMalMFZPKScWkMlV88bDWWpc8rLXWJQ9rrXWJ/cEHKlPFpDJV3KQyVZyofFHxhcobFZPKVDGpTBVvqJxUfKFyUjGpTBVvqEwVk8oXFZPKVHGTyknFicpUcdPDWmtd8rDWWpc8rLXWJT98VDGpTBVvqJxUTBWTyhsVJypvqEwVU8UXFb+pYlI5UZkqvlD5QuVEZaqYVN5QmSpOVKaKSWWqOKmYVKaKE5Wp4ouHtda65GGttS55WGutS+wPPlCZKiaVk4ovVN6oOFE5qfhCZaqYVKaKE5Wp4g2VqWJSmSp+k8pUMalMFScqb1ScqLxR8YbKScW/2cNaa13ysNZalzystdYlP/yyihOVqWJSmSpOKt5Q+ZsqvlB5Q+WLikllqjhRmSomlROVqeJEZap4Q+WLikllqphUTiomlaniROWNii8e1lrrkoe11rrkYa21LrE/uEhlqnhDZap4Q+WNikllqphU3qiYVKaKN1ROKr5QeaNiUpkqfpPKVHGiclJxojJVTCpTxRsqX1S8oTJVfPGw1lqXPKy11iUPa611if3BRSq/qWJSmSomlaniROWmikllqrhJZaqYVE4q3lCZKiaVNyq+UHmjYlKZKiaVLyomlaliUjmp+Dd5WGutSx7WWuuSh7XWuuSHj1ROKiaVk4rfpDJVnFRMKlPFpHJSMalMFScqU8VUcVJxojJVTCpTxaQyVbyhMlVMKjepTBU3VUwqU8UbFScqU8WkMlXc9LDWWpc8rLXWJQ9rrXW... [truncated]
+2026-02-14T14:36:48.060Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"qr_ready","qr":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAAEUCAYAAADqcMl5AAAAAklEQVR4AewaftIAABJ1SURBVO3BQY4gx7LgQDJR978yp5e++QEkMqolvXEz+4O11rrgYa21LnlYa61LHtZa65KHtda65GGttS55WGutSx7WWuuSh7XWuuRhrbUueVhrrUse1lrrkoe11rrkYa21LnlYa61LHtZa65IfPlL5mypOVKaKSeWmit+k8kbFGyonFZPKVPGGyknFicrfVDGpTBVvqJxUTCp/U8UXD2utdcnDWmtd8rDWWpf8cFnFTSpvVJxUTCpTxYnKpPJGxYnKb1L5ouINlS9UTiomlaliUpkqTlTeUJkqbqq4SeWmh7XWuuRhrbUueVhrrUt++GUqb1S8oTJVTCpTxVRxonJScaLyRcWJyhsVk8qJyknFFxVvVEwqJyonKl+oTBWTym9SeaPiNz2stdYlD2utdcnDWmtd8sP/Z1SmijcqJpWp4kTlN6lMFScVk8pJxU0qU8VUcVIxqZxUnKh8oXJSMan8L3lYa61LHtZa65KHtda65If/MSo3VUwqb1RMKlPFpDKpTBVTxRcqb6i8UfGGylQxqUwVU8WkcqIyVbyhMlVMKpPKVPG/5GGttS55WGutSx7WWuuSH35ZxT+pYlI5UZkqpooTlaliqphUpooTlTcqJpWTijdUpopJ5aRiqvhCZao4qZhUTipOVE4qbqr4N3lYa61LHtZa65KHtda65IfLVP5JFZPKVDGpTBWTylQxqUwVk8pU8YbKVDGpTBWTylQxqZyoTBVfVEwqU8WkMlVMKlPFpDJVTCpTxaTyRsWkcqIyVZyo/Js9rLXWJQ9rrXXJw1prXWJ/8B+m8kXFGyo3VZyoTBWTyk0Vb6j8popJZap4Q2WqmFROKtb/7WGttS55WGutSx7WWuuSHz5SmSomlZsqpooTlaniRGWqeKPiRGVSmSpuqjhRmVS+qDhReUNlqjhR+aLiROWNiknlpGJSuaniNz2stdYlD2utdcnDWmtd8sMvq5hUTireUJkqvqg4qZhUblI5UZkqTlSmiqliUjmp+E0Vb6h8oTJVvFExqZxU/E0Vk8pUcdPDWmtd8rDWWpc8rLXWJfYHv0hlqnhDZaqYVL6o+EJlqphUpopJ5aTiRGWqOFGZKiaVNypOVG6qmFR+U8WJylQxqXxRMalMFZPKScWkMlV88bDWWpc8rLXWJQ9rrXWJ/cEHKlPFpDJV3KQyVZyofFHxhcobFZPKVDGpTBVvqJxUfKFyUjGpTBVvqEwVk8oXFZPKVHGTyknFicpUcdPDWmtd8rDWWpc8rLXWJT98VDGpTBVvqJxUTBWTyhsVJypvqEwVU8UXFb+pYlI5UZkqvlD5QuVEZaqYVN5QmSpOVKaKSWWqOKmYVKaKE5Wp4ouHtda65GGttS55WGutS+wPPlCZKiaVk4ovVN6oOFE5qfhCZaqYVKaKE5Wp4g2VqWJSmSp+k8pUMalMFScqb1ScqLxR8YbKScW/2cNaa13ysNZalzystdYlP/yyihOVqWJSmSpOKt5Q+ZsqvlB5Q+WLikllqjhRmSomlROVqeJEZap4Q+WLikllqphUTiomlaniROWNii8e1lrrkoe11rrkYa21LrE/uEhlqnhDZap4Q+WNikllqphU3qiYVKaKN1ROKr5QeaNiUpkqfpPKVHGiclJxojJVTCpTxRsqX1S8oTJVfPGw1lqXPKy11iUPa611if3BRSq/qWJSmSomlaniROWmikllqrhJZaqYVE4q3lCZKiaVNyq+UHmjYlKZKiaVLyomlaliUjmp+Dd5WGutSx7WWuuSh7XWuuSHj1ROKiaVk4rfpDJVnFRMKlPFpHJSMalMFScqU8VUcVJxojJVTCpTxaQyVbyhMlVMKjepTBU3VUwqU8UbFScqU8WkMlXc9LDWWpc8rLXWJQ9rrXW... [truncated]
+2026-02-14T14:36:52.916Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"qr_ready","qr":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAAEUCAYAAADqcMl5AAAAAklEQVR4AewaftIAABJ1SURBVO3BQY4gx7LgQDJR978yp5e++QEkMqolvXEz+4O11rrgYa21LnlYa61LHtZa65KHtda65GGttS55WGutSx7WWuuSh7XWuuRhrbUueVhrrUse1lrrkoe11rrkYa21LnlYa61LHtZa65IfPlL5mypOVKaKSeWmit+k8kbFGyonFZPKVPGGyknFicrfVDGpTBVvqJxUTCp/U8UXD2utdcnDWmtd8rDWWpf8cFnFTSpvVJxUTCpTxYnKpPJGxYnKb1L5ouINlS9UTiomlaliUpkqTlTeUJkqbqq4SeWmh7XWuuRhrbUueVhrrUt++GUqb1S8oTJVTCpTxVRxonJScaLyRcWJyhsVk8qJyknFFxVvVEwqJyonKl+oTBWTym9SeaPiNz2stdYlD2utdcnDWmtd8sP/Z1SmijcqJpWp4kTlN6lMFScVk8pJxU0qU8VUcVIxqZxUnKh8oXJSMan8L3lYa61LHtZa65KHtda65If/MSo3VUwqb1RMKlPFpDKpTBVTxRcqb6i8UfGGylQxqUwVU8WkcqIyVbyhMlVMKpPKVPG/5GGttS55WGutSx7WWuuSH35ZxT+pYlI5UZkqpooTlaliqphUpooTlTcqJpWTijdUpopJ5aRiqvhCZao4qZhUTipOVE4qbqr4N3lYa61LHtZa65KHtda65IfLVP5JFZPKVDGpTBWTylQxqUwVk8pU8YbKVDGpTBWTylQxqZyoTBVfVEwqU8WkMlVMKlPFpDJVTCpTxaTyRsWkcqIyVZyo/Js9rLXWJQ9rrXXJw1prXWJ/8B+m8kXFGyo3VZyoTBWTyk0Vb6j8popJZap4Q2WqmFROKtb/7WGttS55WGutSx7WWuuSHz5SmSomlZsqpooTlaniRGWqeKPiRGVSmSpuqjhRmVS+qDhReUNlqjhR+aLiROWNiknlpGJSuaniNz2stdYlD2utdcnDWmtd8sMvq5hUTireUJkqvqg4qZhUblI5UZkqTlSmiqliUjmp+E0Vb6h8oTJVvFExqZxU/E0Vk8pUcdPDWmtd8rDWWpc8rLXWJfYHv0hlqnhDZaqYVL6o+EJlqphUpopJ5aTiRGWqOFGZKiaVNypOVG6qmFR+U8WJylQxqXxRMalMFZPKScWkMlV88bDWWpc8rLXWJQ9rrXWJ/cEHKlPFpDJV3KQyVZyofFHxhcobFZPKVDGpTBVvqJxUfKFyUjGpTBVvqEwVk8oXFZPKVHGTyknFicpUcdPDWmtd8rDWWpc8rLXWJT98VDGpTBVvqJxUTBWTyhsVJypvqEwVU8UXFb+pYlI5UZkqvlD5QuVEZaqYVN5QmSpOVKaKSWWqOKmYVKaKE5Wp4ouHtda65GGttS55WGutS+wPPlCZKiaVk4ovVN6oOFE5qfhCZaqYVKaKE5Wp4g2VqWJSmSp+k8pUMalMFScqb1ScqLxR8YbKScW/2cNaa13ysNZalzystdYlP/yyihOVqWJSmSpOKt5Q+ZsqvlB5Q+WLikllqjhRmSomlROVqeJEZap4Q+WLikllqphUTiomlaniROWNii8e1lrrkoe11rrkYa21LrE/uEhlqnhDZap4Q+WNikllqphU3qiYVKaKN1ROKr5QeaNiUpkqfpPKVHGiclJxojJVTCpTxRsqX1S8oTJVfPGw1lqXPKy11iUPa611if3BRSq/qWJSmSomlaniROWmikllqrhJZaqYVE4q3lCZKiaVNyq+UHmjYlKZKiaVLyomlaliUjmp+Dd5WGutSx7WWuuSh7XWuuSHj1ROKiaVk4rfpDJVnFRMKlPFpHJSMalMFScqU8VUcVJxojJVTCpTxaQyVbyhMlVMKjepTBU3VUwqU8UbFScqU8WkMlXc9LDWWpc8rLXWJQ9rrXW... [truncated]
+2026-02-14T14:36:57.931Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"qr_ready","qr":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAAEUCAYAAADqcMl5AAAAAklEQVR4AewaftIAABJ1SURBVO3BQY4gx7LgQDJR978yp5e++QEkMqolvXEz+4O11rrgYa21LnlYa61LHtZa65KHtda65GGttS55WGutSx7WWuuSh7XWuuRhrbUueVhrrUse1lrrkoe11rrkYa21LnlYa61LHtZa65IfPlL5mypOVKaKSeWmit+k8kbFGyonFZPKVPGGyknFicrfVDGpTBVvqJxUTCp/U8UXD2utdcnDWmtd8rDWWpf8cFnFTSpvVJxUTCpTxYnKpPJGxYnKb1L5ouINlS9UTiomlaliUpkqTlTeUJkqbqq4SeWmh7XWuuRhrbUueVhrrUt++GUqb1S8oTJVTCpTxVRxonJScaLyRcWJyhsVk8qJyknFFxVvVEwqJyonKl+oTBWTym9SeaPiNz2stdYlD2utdcnDWmtd8sP/Z1SmijcqJpWp4kTlN6lMFScVk8pJxU0qU8VUcVIxqZxUnKh8oXJSMan8L3lYa61LHtZa65KHtda65If/MSo3VUwqb1RMKlPFpDKpTBVTxRcqb6i8UfGGylQxqUwVU8WkcqIyVbyhMlVMKpPKVPG/5GGttS55WGutSx7WWuuSH35ZxT+pYlI5UZkqpooTlaliqphUpooTlTcqJpWTijdUpopJ5aRiqvhCZao4qZhUTipOVE4qbqr4N3lYa61LHtZa65KHtda65IfLVP5JFZPKVDGpTBWTylQxqUwVk8pU8YbKVDGpTBWTylQxqZyoTBVfVEwqU8WkMlVMKlPFpDJVTCpTxaTyRsWkcqIyVZyo/Js9rLXWJQ9rrXXJw1prXWJ/8B+m8kXFGyo3VZyoTBWTyk0Vb6j8popJZap4Q2WqmFROKtb/7WGttS55WGutSx7WWuuSHz5SmSomlZsqpooTlaniRGWqeKPiRGVSmSpuqjhRmVS+qDhReUNlqjhR+aLiROWNiknlpGJSuaniNz2stdYlD2utdcnDWmtd8sMvq5hUTireUJkqvqg4qZhUblI5UZkqTlSmiqliUjmp+E0Vb6h8oTJVvFExqZxU/E0Vk8pUcdPDWmtd8rDWWpc8rLXWJfYHv0hlqnhDZaqYVL6o+EJlqphUpopJ5aTiRGWqOFGZKiaVNypOVG6qmFR+U8WJylQxqXxRMalMFZPKScWkMlV88bDWWpc8rLXWJQ9rrXWJ/cEHKlPFpDJV3KQyVZyofFHxhcobFZPKVDGpTBVvqJxUfKFyUjGpTBVvqEwVk8oXFZPKVHGTyknFicpUcdPDWmtd8rDWWpc8rLXWJT98VDGpTBVvqJxUTBWTyhsVJypvqEwVU8UXFb+pYlI5UZkqvlD5QuVEZaqYVN5QmSpOVKaKSWWqOKmYVKaKE5Wp4ouHtda65GGttS55WGutS+wPPlCZKiaVk4ovVN6oOFE5qfhCZaqYVKaKE5Wp4g2VqWJSmSp+k8pUMalMFScqb1ScqLxR8YbKScW/2cNaa13ysNZalzystdYlP/yyihOVqWJSmSpOKt5Q+ZsqvlB5Q+WLikllqjhRmSomlROVqeJEZap4Q+WLikllqphUTiomlaniROWNii8e1lrrkoe11rrkYa21LrE/uEhlqnhDZap4Q+WNikllqphU3qiYVKaKN1ROKr5QeaNiUpkqfpPKVHGiclJxojJVTCpTxRsqX1S8oTJVfPGw1lqXPKy11iUPa611if3BRSq/qWJSmSomlaniROWmikllqrhJZaqYVE4q3lCZKiaVNyq+UHmjYlKZKiaVLyomlaliUjmp+Dd5WGutSx7WWuuSh7XWuuSHj1ROKiaVk4rfpDJVnFRMKlPFpHJSMalMFScqU8VUcVJxojJVTCpTxaQyVbyhMlVMKjepTBU3VUwqU8UbFScqU8WkMlXc9LDWWpc8rLXWJQ9rrXW... [truncated]
+2026-02-14T14:37:02.947Z [network][GET 200] /api/whatsapp/status?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"status":"qr_ready","qr":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARQAAAEUCAYAAADqcMl5AAAAAklEQVR4AewaftIAABJ1SURBVO3BQY4gx7LgQDJR978yp5e++QEkMqolvXEz+4O11rrgYa21LnlYa61LHtZa65KHtda65GGttS55WGutSx7WWuuSh7XWuuRhrbUueVhrrUse1lrrkoe11rrkYa21LnlYa61LHtZa65IfPlL5mypOVKaKSeWmit+k8kbFGyonFZPKVPGGyknFicrfVDGpTBVvqJxUTCp/U8UXD2utdcnDWmtd8rDWWpf8cFnFTSpvVJxUTCpTxYnKpPJGxYnKb1L5ouINlS9UTiomlaliUpkqTlTeUJkqbqq4SeWmh7XWuuRhrbUueVhrrUt++GUqb1S8oTJVTCpTxVRxonJScaLyRcWJyhsVk8qJyknFFxVvVEwqJyonKl+oTBWTym9SeaPiNz2stdYlD2utdcnDWmtd8sP/Z1SmijcqJpWp4kTlN6lMFScVk8pJxU0qU8VUcVIxqZxUnKh8oXJSMan8L3lYa61LHtZa65KHtda65If/MSo3VUwqb1RMKlPFpDKpTBVTxRcqb6i8UfGGylQxqUwVU8WkcqIyVbyhMlVMKpPKVPG/5GGttS55WGutSx7WWuuSH35ZxT+pYlI5UZkqpooTlaliqphUpooTlTcqJpWTijdUpopJ5aRiqvhCZao4qZhUTipOVE4qbqr4N3lYa61LHtZa65KHtda65IfLVP5JFZPKVDGpTBWTylQxqUwVk8pU8YbKVDGpTBWTylQxqZyoTBVfVEwqU8WkMlVMKlPFpDJVTCpTxaTyRsWkcqIyVZyo/Js9rLXWJQ9rrXXJw1prXWJ/8B+m8kXFGyo3VZyoTBWTyk0Vb6j8popJZap4Q2WqmFROKtb/7WGttS55WGutSx7WWuuSHz5SmSomlZsqpooTlaniRGWqeKPiRGVSmSpuqjhRmVS+qDhReUNlqjhR+aLiROWNiknlpGJSuaniNz2stdYlD2utdcnDWmtd8sMvq5hUTireUJkqvqg4qZhUblI5UZkqTlSmiqliUjmp+E0Vb6h8oTJVvFExqZxU/E0Vk8pUcdPDWmtd8rDWWpc8rLXWJfYHv0hlqnhDZaqYVL6o+EJlqphUpopJ5aTiRGWqOFGZKiaVNypOVG6qmFR+U8WJylQxqXxRMalMFZPKScWkMlV88bDWWpc8rLXWJQ9rrXWJ/cEHKlPFpDJV3KQyVZyofFHxhcobFZPKVDGpTBVvqJxUfKFyUjGpTBVvqEwVk8oXFZPKVHGTyknFicpUcdPDWmtd8rDWWpc8rLXWJT98VDGpTBVvqJxUTBWTyhsVJypvqEwVU8UXFb+pYlI5UZkqvlD5QuVEZaqYVN5QmSpOVKaKSWWqOKmYVKaKE5Wp4ouHtda65GGttS55WGutS+wPPlCZKiaVk4ovVN6oOFE5qfhCZaqYVKaKE5Wp4g2VqWJSmSp+k8pUMalMFScqb1ScqLxR8YbKScW/2cNaa13ysNZalzystdYlP/yyihOVqWJSmSpOKt5Q+ZsqvlB5Q+WLikllqjhRmSomlROVqeJEZap4Q+WLikllqphUTiomlaniROWNii8e1lrrkoe11rrkYa21LrE/uEhlqnhDZap4Q+WNikllqphU3qiYVKaKN1ROKr5QeaNiUpkqfpPKVHGiclJxojJVTCpTxRsqX1S8oTJVfPGw1lqXPKy11iUPa611if3BRSq/qWJSmSomlaniROWmikllqrhJZaqYVE4q3lCZKiaVNyq+UHmjYlKZKiaVLyomlaliUjmp+Dd5WGutSx7WWuuSh7XWuuSHj1ROKiaVk4rfpDJVnFRMKlPFpHJSMalMFScqU8VUcVJxojJVTCpTxaQyVbyhMlVMKjepTBU3VUwqU8UbFScqU8WkMlXc9LDWWpc8rLXWJQ9rrXW... [truncated]
+2026-02-14T14:49:56.196Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:01.283Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:03.707Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:50:06.269Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:11.320Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:13.685Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:50:16.370Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:21.017Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:23.432Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:50:25.936Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:30.976Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:33.400Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:50:35.950Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:40.828Z [network][GET 502] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head><script>(function(){
+if(window.__ORCHIDS_PROXY_INJECTED__)return;
+window.__ORCHIDS_PROXY_INJECTED__=true;
+if(window.parent===window)return;
+function s(p){try{window.parent.postMessage(p,"*")}catch(e){}}
+
+/* ── Error capture ─────────────────────────────────────────────── */
+window.addEventListener("error",function(e){s({type:"ERROR_CAPTURED",error:{message:e.message,stack:e.error&&e.error.stack,filename:e.filename,lineno:e.lineno,colno:e.colno,source:"window.onerror"},timestamp:Date.now()})});
+window.addEventListener("unhandledrejection",function(e){var r=e.reason;s({type:"ERROR_CAPTURED",error:{message:r&&r.message?r.message:String(r),stack:r&&r.stack,source:"unhandledrejection"},timestamp:Date.now()})});
+var EID=["_expo-static-error","error-overlay","orchids-error-boundary"];
+function chk(){
+var el,txt;
+el=document.getElementById("_expo-static-error");
+if(el&&el.textContent){s({type:"ERROR_CAPTURED",error:{message:el.textContent.slice(0,5000),source:"expo-static-error"},timestamp:Date.now()})}
+el=document.getElementById("error-overlay");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"expo-overlay"},timestamp:Date.now()})}
+el=document.getElementById("orchids-error-boundary");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"orchids-error-boundary"},timestamp:Date.now()})}
+}
+function obs(root){
+new MutationObserver(function(muts){
+for(var i=0;i<muts.length;i++){for(var j=0;j<muts[i].addedNodes.length;j++){var n=muts[i].addedNodes[j];
+if(n.nodeType===1&&(EID.indexOf(n.id)!==-1||(n.querySelector&&n.querySelector("#_expo-sta... [truncated]
+2026-02-14T14:50:43.229Z [network][GET 502] /api/whatsapp/monitoring
+  response: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head><script>(function(){
+if(window.__ORCHIDS_PROXY_INJECTED__)return;
+window.__ORCHIDS_PROXY_INJECTED__=true;
+if(window.parent===window)return;
+function s(p){try{window.parent.postMessage(p,"*")}catch(e){}}
+
+/* ── Error capture ─────────────────────────────────────────────── */
+window.addEventListener("error",function(e){s({type:"ERROR_CAPTURED",error:{message:e.message,stack:e.error&&e.error.stack,filename:e.filename,lineno:e.lineno,colno:e.colno,source:"window.onerror"},timestamp:Date.now()})});
+window.addEventListener("unhandledrejection",function(e){var r=e.reason;s({type:"ERROR_CAPTURED",error:{message:r&&r.message?r.message:String(r),stack:r&&r.stack,source:"unhandledrejection"},timestamp:Date.now()})});
+var EID=["_expo-static-error","error-overlay","orchids-error-boundary"];
+function chk(){
+var el,txt;
+el=document.getElementById("_expo-static-error");
+if(el&&el.textContent){s({type:"ERROR_CAPTURED",error:{message:el.textContent.slice(0,5000),source:"expo-static-error"},timestamp:Date.now()})}
+el=document.getElementById("error-overlay");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"expo-overlay"},timestamp:Date.now()})}
+el=document.getElementById("orchids-error-boundary");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"orchids-error-boundary"},timestamp:Date.now()})}
+}
+function obs(root){
+new MutationObserver(function(muts){
+for(var i=0;i<muts.length;i++){for(var j=0;j<muts[i].addedNodes.length;j++){var n=muts[i].addedNodes[j];
+if(n.nodeType===1&&(EID.indexOf(n.id)!==-1||(n.querySelector&&n.querySelector("#_expo-sta... [truncated]
+2026-02-14T14:50:45.840Z [network][GET 502] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: <!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en-US"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->
+<head><script>(function(){
+if(window.__ORCHIDS_PROXY_INJECTED__)return;
+window.__ORCHIDS_PROXY_INJECTED__=true;
+if(window.parent===window)return;
+function s(p){try{window.parent.postMessage(p,"*")}catch(e){}}
+
+/* ── Error capture ─────────────────────────────────────────────── */
+window.addEventListener("error",function(e){s({type:"ERROR_CAPTURED",error:{message:e.message,stack:e.error&&e.error.stack,filename:e.filename,lineno:e.lineno,colno:e.colno,source:"window.onerror"},timestamp:Date.now()})});
+window.addEventListener("unhandledrejection",function(e){var r=e.reason;s({type:"ERROR_CAPTURED",error:{message:r&&r.message?r.message:String(r),stack:r&&r.stack,source:"unhandledrejection"},timestamp:Date.now()})});
+var EID=["_expo-static-error","error-overlay","orchids-error-boundary"];
+function chk(){
+var el,txt;
+el=document.getElementById("_expo-static-error");
+if(el&&el.textContent){s({type:"ERROR_CAPTURED",error:{message:el.textContent.slice(0,5000),source:"expo-static-error"},timestamp:Date.now()})}
+el=document.getElementById("error-overlay");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"expo-overlay"},timestamp:Date.now()})}
+el=document.getElementById("orchids-error-boundary");
+txt=el&&(el.innerText||el.textContent);
+if(txt){s({type:"ERROR_CAPTURED",error:{message:txt.slice(0,5000),source:"orchids-error-boundary"},timestamp:Date.now()})}
+}
+function obs(root){
+new MutationObserver(function(muts){
+for(var i=0;i<muts.length;i++){for(var j=0;j<muts[i].addedNodes.length;j++){var n=muts[i].addedNodes[j];
+if(n.nodeType===1&&(EID.indexOf(n.id)!==-1||(n.querySelector&&n.querySelector("#_expo-sta... [truncated]
+2026-02-14T14:50:51.787Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:50:54.345Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:50:56.164Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:01.333Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:03.737Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:51:06.273Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:11.270Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:13.777Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:51:16.230Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:21.038Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:23.418Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:51:25.952Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:30.966Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:51:33.438Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"","status":"CONNECTED","last_active":"2026-02-14T14:45:50.663+00:00","msg_count":0}]}
+2026-02-14T14:56:43.482Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T14:56:19.833+00:00","msg_count":0}]}
+2026-02-14T14:56:53.372Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T14:56:19.833+00:00","msg_count":0}]}
+2026-02-14T14:57:03.482Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T14:56:19.833+00:00","msg_count":0}]}
+2026-02-14T14:57:12.641Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28&limit=200
+  response: {"conversations":[]}
+2026-02-14T14:57:13.462Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Unknown","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T14:56:19.833+00:00","msg_count":0}]}
+2026-02-14T15:48:23.609Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:48:38.747Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:48:53.687Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:49:08.443Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:49:23.557Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:49:38.719Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:49:53.408Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:50:08.452Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:50:23.468Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:50:38.618Z [network][GET 200] /api/whatsapp/monitoring
+  response: {"sessions":[{"id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","staff_name":"Afiq Aizat","phone_number":"60143384498","status":"CONNECTED","last_active":"2026-02-14T15:46:34.144+00:00","msg_count":41503}]}
+2026-02-14T15:50:21.475Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"conversations":[{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60143384498@s.whatsapp.net","contact_name":"60143384498","contact_number":"60143384498","picture_url":null,"last_message":"[Media]","last_message_type":"other","last_timestamp":"2026-02-14T15:27:53+00:00","last_from_me":false,"total_messages":20,"unread_count":20},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363420369685627@g.us","contact_name":"AKu","contact_number":"120363420369685627","picture_url":null,"last_message":"Test","last_message_type":"text","last_timestamp":"2026-02-14T15:01:05+00:00","last_from_me":false,"total_messages":451,"unread_count":109},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60132304498@s.whatsapp.net","contact_name":"60132304498","contact_number":"60132304498","picture_url":null,"last_message":"[Dokumen]","last_message_type":"document","last_timestamp":"2026-02-14T14:25:52+00:00","last_from_me":false,"total_messages":1252,"unread_count":826},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60138334498@s.whatsapp.net","contact_name":"60138334498","contact_number":"60138334498","picture_url":null,"last_message":"Napa husna","last_message_type":"text","last_timestamp":"2026-02-14T11:36:51+00:00","last_from_me":true,"total_messages":593,"unread_count":317},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363418275196011@g.us","contact_name":"KS LEADS AGIHAN","contact_number":"120363418275196011","picture_url":null,"last_message":"0196943140 Jakarta -tiktok \n0199234087 Swiss -tiktok","last_message_type":"text","last_timestamp":"2026-02-14T10:05:00+00:00","last_from_me":false,"total_messages":1054,"unread_count":1047},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363424798081836@g.us","contact_name":"Alumni KPI Coach Idahar","contact_number":"120363424798081836","picture_url":null,"last_message":"Disebabkan ramai lagi yg nak belajar pasal SCORECARD, mungkin ada yg tak sempat join sesi lepas.\n\nTakpe ja... [truncated]
+2026-02-14T15:50:31.273Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"conversations":[{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60143384498@s.whatsapp.net","contact_name":"60143384498","contact_number":"60143384498","picture_url":null,"last_message":"[Media]","last_message_type":"other","last_timestamp":"2026-02-14T15:27:53+00:00","last_from_me":false,"total_messages":20,"unread_count":20},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363420369685627@g.us","contact_name":"AKu","contact_number":"120363420369685627","picture_url":null,"last_message":"Test","last_message_type":"text","last_timestamp":"2026-02-14T15:01:05+00:00","last_from_me":false,"total_messages":451,"unread_count":109},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60132304498@s.whatsapp.net","contact_name":"60132304498","contact_number":"60132304498","picture_url":null,"last_message":"[Dokumen]","last_message_type":"document","last_timestamp":"2026-02-14T14:25:52+00:00","last_from_me":false,"total_messages":1252,"unread_count":826},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60138334498@s.whatsapp.net","contact_name":"60138334498","contact_number":"60138334498","picture_url":null,"last_message":"Napa husna","last_message_type":"text","last_timestamp":"2026-02-14T11:36:51+00:00","last_from_me":true,"total_messages":593,"unread_count":317},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363418275196011@g.us","contact_name":"KS LEADS AGIHAN","contact_number":"120363418275196011","picture_url":null,"last_message":"0196943140 Jakarta -tiktok \n0199234087 Swiss -tiktok","last_message_type":"text","last_timestamp":"2026-02-14T10:05:00+00:00","last_from_me":false,"total_messages":1054,"unread_count":1047},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363424798081836@g.us","contact_name":"Alumni KPI Coach Idahar","contact_number":"120363424798081836","picture_url":null,"last_message":"Disebabkan ramai lagi yg nak belajar pasal SCORECARD, mungkin ada yg tak sempat join sesi lepas.\n\nTakpe ja... [truncated]
+2026-02-14T15:50:41.828Z [network][GET 200] /api/whatsapp/messages?staffId=ec380579-9974-449b-85de-948f2b1aaa28
+  response: {"conversations":[{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60143384498@s.whatsapp.net","contact_name":"60143384498","contact_number":"60143384498","picture_url":null,"last_message":"[Media]","last_message_type":"other","last_timestamp":"2026-02-14T15:27:53+00:00","last_from_me":false,"total_messages":20,"unread_count":20},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363420369685627@g.us","contact_name":"AKu","contact_number":"120363420369685627","picture_url":null,"last_message":"Test","last_message_type":"text","last_timestamp":"2026-02-14T15:01:05+00:00","last_from_me":false,"total_messages":451,"unread_count":109},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60132304498@s.whatsapp.net","contact_name":"60132304498","contact_number":"60132304498","picture_url":null,"last_message":"[Dokumen]","last_message_type":"document","last_timestamp":"2026-02-14T14:25:52+00:00","last_from_me":false,"total_messages":1252,"unread_count":826},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"60138334498@s.whatsapp.net","contact_name":"60138334498","contact_number":"60138334498","picture_url":null,"last_message":"Napa husna","last_message_type":"text","last_timestamp":"2026-02-14T11:36:51+00:00","last_from_me":true,"total_messages":593,"unread_count":317},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363418275196011@g.us","contact_name":"KS LEADS AGIHAN","contact_number":"120363418275196011","picture_url":null,"last_message":"0196943140 Jakarta -tiktok \n0199234087 Swiss -tiktok","last_message_type":"text","last_timestamp":"2026-02-14T10:05:00+00:00","last_from_me":false,"total_messages":1054,"unread_count":1047},{"staff_id":"ec380579-9974-449b-85de-948f2b1aaa28","jid":"120363424798081836@g.us","contact_name":"Alumni KPI Coach Idahar","contact_number":"120363424798081836","picture_url":null,"last_message":"Disebabkan ramai lagi yg nak belajar pasal SCORECARD, mungkin ada yg tak sempat join sesi lepas.\n\nTakpe ja... [truncated]

@@ -43,8 +43,10 @@ import {
     FileBarChart,
     Image,
     Plus,
-    Download
-  } from "lucide-react";
+      Download,
+      Wifi,
+      MessageSquare
+    } from "lucide-react";
   import { Button } from "@/components/ui/button";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
   
@@ -65,8 +67,11 @@ import {
   | "package-pricing"
   | "whatsapp-rotator"
   | "whatsapp-blasting"
-    | "whatsapp-monitoring"
-    | "agent-orders"
+| "whatsapp-monitoring"
+    | "whatsapp-connections"
+    | "whatsapp-dashboard"
+    | "whatsapp-chat"
+  | "agent-orders"
     | "agent-reports"
     | "export-requests";
 
@@ -158,6 +163,8 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
   const canSeeWARotator = hasPermission("whatsapp-rotator", isAdmin);
   const canSeeWABlasting = hasPermission("whatsapp-blasting", isAdmin);
   const canSeeWAMonitoring = hasPermission("whatsapp-monitoring", isAdmin);
+  const canSeeWAConnections = hasPermission("whatsapp-connections", isSuperAdmin);
+  const canSeeWADashboard = hasPermission("whatsapp-dashboard", isAdmin);
 
   const handleViewChange = (view: ActiveView) => {
     onViewChange(view);
@@ -506,9 +513,12 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                         {isWhatsAppOpen && (
                           <div className="ml-4 pl-4 border-l border-slate-700 space-y-1">
                             <SubMenuItem view="whatsapp" icon={Send} label="Utama" colorClass="emerald" />
+                            <SubMenuItem view="whatsapp-chat" icon={MessageSquare} label="Chat Saya" colorClass="emerald" />
                             {canSeeWARotator && <SubMenuItem view="whatsapp-rotator" icon={RefreshCw} label="WA Rotator" colorClass="emerald" />}
                             {canSeeWABlasting && <SubMenuItem view="whatsapp-blasting" icon={Send} label="WA Blasting" colorClass="emerald" />}
-                            {canSeeWAMonitoring && <SubMenuItem view="whatsapp-monitoring" icon={Monitor} label="Monitoring" colorClass="emerald" />}
+              {canSeeWAMonitoring && <SubMenuItem view="whatsapp-monitoring" icon={Monitor} label="Monitoring" colorClass="emerald" />}
+                              {canSeeWAConnections && <SubMenuItem view="whatsapp-connections" icon={Wifi} label="Monitor Sambungan" colorClass="emerald" />}
+                              {canSeeWADashboard && <SubMenuItem view="whatsapp-dashboard" icon={BarChart3} label="Dashboard" colorClass="emerald" />}
                           </div>
                         )}
                       </div>

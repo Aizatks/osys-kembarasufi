@@ -16,11 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    await whatsappManager.disconnect(staffId);
     await whatsappManager.getClient(staffId);
     
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error connecting to WhatsApp:', error);
+    console.error('[WA] Error connecting to WhatsApp:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

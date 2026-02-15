@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { waUrl } from "@/lib/wa-client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Template {
@@ -16,8 +17,17 @@ interface Template {
   content: string;
 }
 
+const STATUS_MAP: Record<string, 'INITIALIZING' | 'QR' | 'READY' | 'DISCONNECTED' | 'LOADING'> = {
+  connecting: 'INITIALIZING',
+  reconnecting: 'INITIALIZING',
+  qr_ready: 'QR',
+  connected: 'READY',
+  disconnected: 'DISCONNECTED',
+  pairing: 'QR',
+};
+
 export function WhatsAppContent() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, token } = useAuth();
   const [status, setStatus] = useState<'INITIALIZING' | 'QR' | 'READY' | 'DISCONNECTED' | 'LOADING'>('LOADING');
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -30,23 +40,30 @@ export function WhatsAppContent() {
   const [sendingTest, setSendingTest] = useState(false);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && token) {
       checkStatus();
       fetchTemplates();
       const interval = setInterval(checkStatus, 5000);
       return () => clearInterval(interval);
     }
-  }, [user?.id]);
+  }, [user?.id, token]);
+
+  const authHeaders = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
 
   const checkStatus = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !token) return;
     try {
-      const res = await fetch(`/api/whatsapp/status?staffId=${user.id}`, { cache: "no-store" });
+      const res = await fetch(waUrl(`/api/whatsapp/status?staffId=${user.id}`), {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
-        setStatus(data.status);
+        setStatus(STATUS_MAP[data.status] || data.status);
         
-        // Handle QR Code data URL prefix
         const qr = data.qr;
         if (qr) {
           const src = qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`;
@@ -63,8 +80,12 @@ export function WhatsAppContent() {
   };
 
   const fetchTemplates = async () => {
+    if (!token) return;
     try {
-      const res = await fetch("/api/whatsapp/templates", { cache: "no-store" });
+      const res = await fetch(waUrl("/api/whatsapp/templates"), {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
         setTemplates(data.templates || []);
@@ -77,11 +98,11 @@ export function WhatsAppContent() {
   const handleUpdateTemplate = async (id: string, content: string) => {
     setSavingTemplate(id);
     try {
-      const res = await fetch("/api/whatsapp/templates", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, content }),
-      });
+        const res = await fetch(waUrl("/api/whatsapp/templates"), {
+          method: "PUT",
+          headers: authHeaders,
+          body: JSON.stringify({ id, content }),
+        });
       if (res.ok) {
         toast.success("Template dikemaskini");
         fetchTemplates();
@@ -107,15 +128,15 @@ export function WhatsAppContent() {
 
     setSendingTest(true);
     try {
-      const res = await fetch("/api/whatsapp/send-test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          staffId: user?.id,
-          number: testNumber,
-          message: "Ini adalah mesej ujian daripada sistem Kembara Sufi WhatsApp Automation."
-        }),
-      });
+        const res = await fetch(waUrl("/api/whatsapp/send-test"), {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ 
+            staffId: user?.id,
+            number: testNumber,
+            message: "Ini adalah mesej ujian daripada sistem Kembara Sufi WhatsApp Automation."
+          }),
+        });
       if (res.ok) {
         toast.success("Mesej ujian dihantar!");
       } else {
@@ -133,11 +154,11 @@ export function WhatsAppContent() {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/whatsapp/connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffId: user.id }),
-      });
+        const res = await fetch(waUrl("/api/whatsapp/connect"), {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ staffId: user.id }),
+        });
       if (res.ok) {
         toast.success("Memulakan sambungan WhatsApp...");
         checkStatus();
@@ -159,14 +180,14 @@ export function WhatsAppContent() {
     
     setIsPairing(true);
     try {
-      const res = await fetch("/api/whatsapp/pair", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          staffId: user.id,
-          phoneNumber: pairingPhone
-        }),
-      });
+        const res = await fetch(waUrl("/api/whatsapp/pair"), {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ 
+            staffId: user.id,
+            phoneNumber: pairingPhone
+          }),
+        });
       
       if (res.ok) {
         const data = await res.json();

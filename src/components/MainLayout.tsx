@@ -30,7 +30,10 @@ import { TripDatesContent } from "./operations/TripDatesContent";
 import { PricingSettingsContent } from "./operations/PricingSettingsContent";
 import { RotatorContent } from "./whatsapp/RotatorContent";
 import { MonitoringContent } from "./whatsapp/MonitoringContent";
+import { WADashboardContent } from "./whatsapp/WADashboardContent";
 import { BlastingContent } from "./whatsapp/BlastingContent";
+import { ConnectionMonitor } from "./whatsapp/ConnectionMonitor";
+import { PersonalChatView } from "./whatsapp/PersonalChatView";
 import { AgentOrders } from "./agent/AgentOrders";
 import { AgentReports } from "./agent/AgentReports";
 import { ExportRequestsContent } from "./ExportRequestsContent";
@@ -355,6 +358,9 @@ export function MainLayout({ children }: Props) {
                     {activeView === "whatsapp-rotator" && <RotatorContent />}
                       {activeView === "whatsapp-blasting" && <BlastingContent />}
                       {activeView === "whatsapp-monitoring" && <MonitoringContent />}
+                      {activeView === "whatsapp-dashboard" && <WADashboardContent />}
+                        {activeView === "whatsapp-connections" && <ConnectionMonitor />}
+                        {activeView === "whatsapp-chat" && <PersonalChatView />}
 
                       {/* Agent Views */}
                       {activeView === "agent-orders" && <AgentOrders />}
