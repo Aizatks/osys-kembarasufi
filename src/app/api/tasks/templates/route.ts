@@ -185,7 +185,7 @@ export async function DELETE(request: NextRequest) {
 
     const { error } = await supabase
       .from('task_templates')
-      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .delete()
       .eq('id', id);
 
     if (error) {

@@ -70,7 +70,6 @@ interface ContactProfile {
   status: string | null;
   phone: string;
   groups: { jid: string; name: string }[];
-  group_members?: { jid: string; name: string | null; phone: string; admin: string | null }[];
   media_count: number;
   recent_media: { id: string; media_url: string; message_type: string; timestamp: string }[];
 }
@@ -187,14 +186,14 @@ export function PersonalChatView() {
         body: JSON.stringify({ staffId, action: "save", jid: selectedChat.jid, name: editName }),
       });
       if (res.ok) {
-          toast.success("Contact saved");
-          setSelectedChat(prev => prev ? { ...prev, contact_name: editName || prev.contact_name } : prev);
-          if (contactProfile) setContactProfile({ ...contactProfile, name: editName });
-        } else {
-          toast.error("Failed to save contact");
-        }
-      } catch {
-        toast.error("An error occurred");
+        toast.success("Kenalan disimpan");
+        setSelectedChat(prev => prev ? { ...prev, contact_name: editName || prev.contact_name } : prev);
+        if (contactProfile) setContactProfile({ ...contactProfile, name: editName });
+      } else {
+        toast.error("Gagal menyimpan kenalan");
+      }
+    } catch {
+      toast.error("Ralat berlaku");
     } finally {
       setSavingContact(false);
     }
@@ -375,7 +374,7 @@ export function PersonalChatView() {
     return (
       <div className="w-80 border-l bg-white dark:bg-slate-900 flex flex-col h-full shrink-0 overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b">
-            <h3 className="font-semibold text-sm">{selectedChat.jid.includes("@g.us") ? "Group Info" : "Contact Info"}</h3>
+          <h3 className="font-semibold text-sm">Info Kenalan</h3>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowContactInfo(false)}>
             <X className="w-4 h-4" />
           </Button>
@@ -407,7 +406,7 @@ export function PersonalChatView() {
 
             {!isGroup && (
               <div className="px-4 py-3 border-b">
-                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Save Contact Name</p>
+                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Simpan Kenalan</p>
                 <div className="flex gap-2">
                   <Input
                     value={editName}
@@ -426,7 +425,7 @@ export function PersonalChatView() {
               <div className="px-4 py-3 border-b">
                 <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Nombor Telefon</p>
                 <button
-                  onClick={() => { navigator.clipboard.writeText(phone); toast.success("Number copied"); }}
+                  onClick={() => { navigator.clipboard.writeText(phone); toast.success("Nombor disalin"); }}
                   className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
                 >
                   <Phone className="w-3.5 h-3.5" /> +{phone}
@@ -458,33 +457,7 @@ export function PersonalChatView() {
               </div>
             )}
 
-              {contactProfile && contactProfile.group_members && contactProfile.group_members.length > 0 && (
-                <div className="px-4 py-3 border-b">
-                  <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">
-                    Group Members ({contactProfile.group_members.length})
-                  </p>
-                  <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                    {contactProfile.group_members.map(m => (
-                      <div key={m.jid} className="flex items-center gap-2 py-1.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shrink-0 text-white text-[10px] font-bold">
-                          {m.name ? m.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : m.phone.slice(-2)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{m.name || `+${m.phone}`}</p>
-                          <p className="text-[10px] text-slate-400">+{m.phone}</p>
-                        </div>
-                        {m.admin && (
-                          <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
-                            {m.admin === 'superadmin' ? 'Creator' : 'Admin'}
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {contactProfile && contactProfile.groups.length > 0 && (
+            {contactProfile && contactProfile.groups.length > 0 && (
               <div className="px-4 py-3">
                 <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">
                   Kumpulan Bersama ({contactProfile.groups.length})
@@ -701,7 +674,7 @@ export function PersonalChatView() {
                     onClick={() => { setShowHeaderMenu(false); handleSyncContacts(); }}
                     disabled={syncingContacts}
                   >
-                    <BookUser className="w-4 h-4" /> {syncingContacts ? "Syncing..." : "Sync Contact"}
+                    <BookUser className="w-4 h-4" /> {syncingContacts ? "Menyinkron..." : "Sinkron Kenalan"}
                   </button>
                   <button
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 rounded-b-lg"

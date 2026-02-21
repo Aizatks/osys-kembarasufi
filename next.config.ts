@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // outputFileTracingRoot removed - not needed for Vercel deployment
+  outputFileTracingRoot: path.resolve(__dirname, '../../'),
   typescript: {
     ignoreBuildErrors: true,
   },
