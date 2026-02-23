@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
 
 interface TaskTemplate {
@@ -126,23 +126,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const { data: allTasks, error: finalError } = await supabase
-      .from('daily_tasks')
-      .select(`
-        *,
-        template:task_templates(id, title, description, category, points, is_mandatory)
-      `)
-      .eq('staff_id', staffId)
-      .gte('task_date', formatDateLocal(periodStart))
-      .lte('task_date', formatDateLocal(periodEnd))
-      .order('created_at', { ascending: true });
+      const { data: allTasks, error: finalError } = await supabase
+        .from('daily_tasks')
+        .select(`
+          *,
+          template:task_templates(id, title, description, category, points, is_mandatory, is_active, sort_order)
+        `)
+        .eq('staff_id', staffId)
+        .gte('task_date', formatDateLocal(periodStart))
+        .lte('task_date', formatDateLocal(periodEnd))
+        .order('created_at', { ascending: true });
 
-    if (finalError) {
-      console.error('Get final tasks error:', finalError);
-      return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
-    }
+      if (finalError) {
+        console.error('Get final tasks error:', finalError);
+        return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
+      }
 
-    const tasks = (allTasks || []).sort((a, b) => {
+      // Filter out tasks whose template is inactive or deleted
+      const filteredAllTasks = (allTasks || []).filter(t => {
+        if (!t.template_id) return true; // custom task - keep
+        if (!t.template) return false; // template deleted - hide
+        if (t.template.is_active === false) return false; // template inactive - hide
+        return true;
+      });
+
+      const tasks = filteredAllTasks.sort((a, b) => {
       const orderA = a.template?.sort_order ?? 999;
       const orderB = b.template?.sort_order ?? 999;
       return orderA - orderB;
