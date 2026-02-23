@@ -364,7 +364,8 @@ class WhatsAppManager {
         fs.mkdirSync(sessionDir, { recursive: true });
       }
 
-      const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
       const { version } = await fetchLatestBaileysVersion();
 
       this.statuses.set(staffId, 'connecting');

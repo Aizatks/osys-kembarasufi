@@ -41,7 +41,7 @@ import {
     RefreshCw,
     Monitor,
     FileBarChart,
-    Image,
+    Image as ImageIcon,
     Plus,
       Download,
       Wifi,
@@ -398,7 +398,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <Image className="w-5 h-5 flex-shrink-0 text-violet-400" />
+                              <ImageIcon className="w-5 h-5 flex-shrink-0 text-violet-400" aria-hidden="true" />
                             <span className="font-medium text-sm">Bahan Media</span>
                           </div>
                           {isMediaOpen ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}

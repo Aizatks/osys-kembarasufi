@@ -137,7 +137,14 @@ export function DashboardContent() {
   const canViewAllStaff = isSuperAdmin || permissions.some(
     p => p.role === user?.role && p.view_id === 'view-all-staff' && p.is_enabled
   );
-  
+
+  // Set default tab based on role — must be before any early return
+  useEffect(() => {
+    if (isMarketing && activeTab === "general") {
+      setActiveTab("marketing");
+    }
+  }, [isMarketing, activeTab]);
+
   if (!isAdmin && !isMarketing) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -145,13 +152,6 @@ export function DashboardContent() {
       </div>
     );
   }
-
-  // Set default tab based on role
-  useEffect(() => {
-    if (isMarketing && activeTab === "general") {
-      setActiveTab("marketing");
-    }
-  }, [isMarketing, activeTab]);
 
   // Calculate dates for MarketingReport if using presets
   let mDateFrom = dateFrom;
