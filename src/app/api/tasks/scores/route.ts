@@ -101,12 +101,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token tidak sah' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const staffIdParam = searchParams.get('staff_id');
-    const period = searchParams.get('period') || 'weekly';
-    const dateParam = searchParams.get('date') || formatDateLocal(new Date());
-    const year = searchParams.get('year');
-    const allStaff = searchParams.get('all') === 'true';
+      const { searchParams } = new URL(request.url);
+      const staffIdParam = searchParams.get('staff_id');
+      const period = searchParams.get('period') || 'weekly';
+      const dateParam = searchParams.get('date') || formatDateLocal(new Date());
+      const year = searchParams.get('year');
+      const allStaff = searchParams.get('all') === 'true';
+      const startDateOverride = searchParams.get('start_date');
+      const endDateOverride = searchParams.get('end_date');
 
     const isAdmin = ['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role);
 
@@ -214,7 +216,10 @@ export async function GET(request: NextRequest) {
     let periodStart: Date;
     let periodEnd: Date;
 
-    if (period === 'weekly') {
+    if (startDateOverride && endDateOverride) {
+      periodStart = new Date(startDateOverride + 'T00:00:00');
+      periodEnd = new Date(endDateOverride + 'T00:00:00');
+    } else if (period === 'weekly') {
       const day = targetDate.getDay();
       const diff = targetDate.getDate() - day + (day === 0 ? -6 : 1);
       periodStart = new Date(targetDate);

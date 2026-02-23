@@ -83,6 +83,7 @@ export function TaskManagementTab() {
   const [pendingUploadTaskId, setPendingUploadTaskId] = useState<string | null>(null);
   const [linkInputTaskId, setLinkInputTaskId] = useState<string | null>(null);
   const [linkInputValue, setLinkInputValue] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const formatDateLocal = (date: Date): string => {
     return date.toISOString().split('T')[0];
@@ -290,17 +291,24 @@ export function TaskManagementTab() {
     }
   };
 
-  const navigateDate = (direction: "prev" | "next") => {
-    const newDate = new Date(selectedDate);
-    if (activeTab === "daily") {
-      newDate.setDate(newDate.getDate() + (direction === "next" ? 1 : -1));
-    } else if (activeTab === "weekly") {
-      newDate.setDate(newDate.getDate() + (direction === "next" ? 7 : -7));
-    } else {
-      newDate.setMonth(newDate.getMonth() + (direction === "next" ? 1 : -1));
-    }
-    setSelectedDate(newDate);
-  };
+    const navigateDate = (direction: "prev" | "next") => {
+      const newDate = new Date(selectedDate);
+      if (activeTab === "daily") {
+        newDate.setDate(newDate.getDate() + (direction === "next" ? 1 : -1));
+      } else if (activeTab === "weekly") {
+        newDate.setDate(newDate.getDate() + (direction === "next" ? 7 : -7));
+      } else {
+        newDate.setMonth(newDate.getMonth() + (direction === "next" ? 1 : -1));
+      }
+      setSelectedDate(newDate);
+    };
+
+    const handleDatePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.value) {
+        setSelectedDate(new Date(e.target.value + "T00:00:00"));
+        setShowDatePicker(false);
+      }
+    };
 
   const getGradeColor = (rate: number) => {
     if (rate >= 95) return "text-emerald-600";
@@ -358,29 +366,46 @@ export function TaskManagementTab() {
 
         <TabsContent value={activeTab} className="mt-4">
           <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateDate("prev")}
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Sebelum
-            </Button>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-amber-500" />
-              <span className="font-medium text-gray-700 dark:text-gray-300">
-                {formatDateDisplay(selectedDate)}
-              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateDate("prev")}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Sebelum
+              </Button>
+              <div className="relative flex items-center gap-2">
+                <button
+                  onClick={() => setShowDatePicker(!showDatePicker)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                >
+                  <Calendar className="w-4 h-4 text-amber-500" />
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {formatDateDisplay(selectedDate)}
+                  </span>
+                </button>
+                {showDatePicker && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-3">
+                    <input
+                      type="date"
+                      value={formatDateLocal(selectedDate)}
+                      onChange={handleDatePickerChange}
+                      className="block w-full text-sm border border-gray-300 dark:border-slate-600 rounded-md px-2 py-1.5 focus:outline-none focus:border-amber-400 dark:bg-slate-700 dark:text-white"
+                      autoFocus
+                      onBlur={() => setTimeout(() => setShowDatePicker(false), 150)}
+                    />
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateDate("next")}
+              >
+                Seterusnya
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateDate("next")}
-            >
-              Seterusnya
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
 
           <Card className="mb-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
             <CardContent className="p-4">

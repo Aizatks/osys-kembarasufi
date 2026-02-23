@@ -19,6 +19,8 @@ import {
   Loader2,
   Award,
   Medal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -74,8 +76,26 @@ export function TaskScoreDashboard() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("weekly");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [dateRangeStart, setDateRangeStart] = useState(() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const start = new Date(d);
+    start.setDate(diff);
+    return start.toISOString().split("T")[0];
+  });
+  const [dateRangeEnd, setDateRangeEnd] = useState(() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const end = new Date(d);
+    end.setDate(diff + 6);
+    return end.toISOString().split("T")[0];
+  });
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [yearlyReport, setYearlyReport] = useState<YearlyReport | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 
   const ROLES = ["Sales", "Ejen", "Marketing", "Admin", "PIC"];
 
@@ -83,7 +103,7 @@ export function TaskScoreDashboard() {
     if (isAdmin) {
       fetchScores();
     }
-  }, [isAdmin, period, selectedYear]);
+  }, [isAdmin, period, selectedYear, selectedMonth, dateRangeStart, dateRangeEnd]);
 
   const filteredScores = scores.filter(s => {
     if (selectedRole === "All") return true;
@@ -97,6 +117,11 @@ export function TaskScoreDashboard() {
       let url = `/api/tasks/scores?all=true&period=${period}`;
       if (period === "yearly") {
         url += `&year=${selectedYear}`;
+      } else if (period === "monthly") {
+        const paddedMonth = selectedMonth.toString().padStart(2, "0");
+        url += `&date=${selectedYear}-${paddedMonth}-01`;
+      } else if (period === "weekly") {
+        url += `&start_date=${dateRangeStart}&end_date=${dateRangeEnd}`;
       }
 
       const response = await fetch(url, {
@@ -230,28 +255,76 @@ export function TaskScoreDashboard() {
             ))}
           </div>
 
-          <Select value={period} onValueChange={(v) => setPeriod(v as "weekly" | "monthly" | "yearly")}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekly">Mingguan</SelectItem>
-              <SelectItem value="monthly">Bulanan</SelectItem>
-              <SelectItem value="yearly">Tahunan</SelectItem>
-            </SelectContent>
-          </Select>
-          {period === "yearly" && (
-            <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-              <SelectTrigger className="w-24">
+            <Select value={period} onValueChange={(v) => setPeriod(v as "weekly" | "monthly" | "yearly")}>
+              <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[2024, 2025, 2026].map((y) => (
-                  <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                ))}
+                <SelectItem value="weekly">Mingguan</SelectItem>
+                <SelectItem value="monthly">Bulanan</SelectItem>
+                <SelectItem value="yearly">Tahunan</SelectItem>
               </SelectContent>
             </Select>
-          )}
+
+            {/* Yearly - pilih tahun */}
+            {period === "yearly" && (
+              <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025, 2026].map((y) => (
+                    <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Monthly - pilih bulan + tahun */}
+            {period === "monthly" && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => {
+                    if (selectedMonth === 1) { setSelectedMonth(12); setSelectedYear(y => y - 1); }
+                    else setSelectedMonth(m => m - 1);
+                  }}
+                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-slate-700"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-medium px-2 min-w-[110px] text-center">
+                  {["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogo","Sep","Okt","Nov","Dis"][selectedMonth - 1]} {selectedYear}
+                </span>
+                <button
+                  onClick={() => {
+                    if (selectedMonth === 12) { setSelectedMonth(1); setSelectedYear(y => y + 1); }
+                    else setSelectedMonth(m => m + 1);
+                  }}
+                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-slate-700"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Weekly - date range picker */}
+            {period === "weekly" && (
+              <div className="flex items-center gap-1 text-sm">
+                <input
+                  type="date"
+                  value={dateRangeStart}
+                  onChange={(e) => setDateRangeStart(e.target.value)}
+                  className="text-xs border border-gray-300 dark:border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-amber-400 dark:bg-slate-700 dark:text-white"
+                />
+                <span className="text-gray-400 text-xs">—</span>
+                <input
+                  type="date"
+                  value={dateRangeEnd}
+                  onChange={(e) => setDateRangeEnd(e.target.value)}
+                  className="text-xs border border-gray-300 dark:border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-amber-400 dark:bg-slate-700 dark:text-white"
+                />
+              </div>
+            )}
         </div>
       </div>
 
@@ -265,7 +338,7 @@ export function TaskScoreDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-amber-500" />
-                Ranking Prestasi {period === "yearly" ? selectedYear : period === "weekly" ? "Minggu Ini" : "Bulan Ini"}
+                  Ranking Prestasi {period === "yearly" ? selectedYear : period === "monthly" ? `${["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogo","Sep","Okt","Nov","Dis"][selectedMonth - 1]} ${selectedYear}` : `${dateRangeStart} — ${dateRangeEnd}`}
               </CardTitle>
             </CardHeader>
               <CardContent>
