@@ -83,6 +83,8 @@ export function TaskManagementTab() {
   const [pendingUploadTaskId, setPendingUploadTaskId] = useState<string | null>(null);
   const [linkInputTaskId, setLinkInputTaskId] = useState<string | null>(null);
   const [linkInputValue, setLinkInputValue] = useState("");
+  const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
+  const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const formatDateLocal = (date: Date): string => {
@@ -303,12 +305,30 @@ export function TaskManagementTab() {
       setSelectedDate(newDate);
     };
 
-    const handleDatePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.value) {
-        setSelectedDate(new Date(e.target.value + "T00:00:00"));
-        setShowDatePicker(false);
-      }
-    };
+  const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+
+  const MONTHS_MY = ["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Og","Sep","Okt","Nov","Dis"];
+  const DAYS_MY = ["Ahd","Isn","Sel","Rab","Kha","Jum","Sab"];
+
+  useEffect(() => {
+    setCalViewYear(selectedDate.getFullYear());
+    setCalViewMonth(selectedDate.getMonth());
+  }, [selectedDate]);
+
+  const handleCalendarSelect = (day: number) => {
+    setSelectedDate(new Date(calViewYear, calViewMonth, day));
+    setShowDatePicker(false);
+  };
+
+  const prevCalMonth = () => {
+    if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
+    else setCalViewMonth(m => m - 1);
+  };
+  const nextCalMonth = () => {
+    if (calViewMonth === 11) { setCalViewMonth(0); setCalViewYear(y => y + 1); }
+    else setCalViewMonth(m => m + 1);
+  };
 
   const getGradeColor = (rate: number) => {
     if (rate >= 95) return "text-emerald-600";
@@ -375,28 +395,75 @@ export function TaskManagementTab() {
                 Sebelum
               </Button>
               <div className="relative flex items-center gap-2">
-                <button
-                  onClick={() => setShowDatePicker(!showDatePicker)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
-                >
-                  <Calendar className="w-4 h-4 text-amber-500" />
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
-                    {formatDateDisplay(selectedDate)}
-                  </span>
-                </button>
-                {showDatePicker && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-3">
-                    <input
-                      type="date"
-                      value={formatDateLocal(selectedDate)}
-                      onChange={handleDatePickerChange}
-                      className="block w-full text-sm border border-gray-300 dark:border-slate-600 rounded-md px-2 py-1.5 focus:outline-none focus:border-amber-400 dark:bg-slate-700 dark:text-white"
-                      autoFocus
-                      onBlur={() => setTimeout(() => setShowDatePicker(false), 150)}
-                    />
-                  </div>
-                )}
-              </div>
+                  <button
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors"
+                  >
+                    <Calendar className="w-4 h-4 text-amber-500" />
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {formatDateDisplay(selectedDate)}
+                    </span>
+                  </button>
+                    {showDatePicker && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowDatePicker(false)} />
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl p-3 w-72">
+                          {/* Header bulan/tahun */}
+                          <div className="flex items-center justify-between mb-2">
+                            <button onClick={prevCalMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700">
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                              {MONTHS_MY[calViewMonth]} {calViewYear}
+                            </span>
+                            <button onClick={nextCalMonth} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-700">
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                          {/* Header hari */}
+                          <div className="grid grid-cols-7 mb-1">
+                            {DAYS_MY.map(d => (
+                              <div key={d} className="text-center text-xs text-gray-400 font-medium py-1">{d}</div>
+                            ))}
+                          </div>
+                          {/* Grid tarikh */}
+                          <div className="grid grid-cols-7">
+                            {Array.from({ length: getFirstDayOfMonth(calViewYear, calViewMonth) }).map((_, i) => (
+                              <div key={`empty-${i}`} />
+                            ))}
+                            {Array.from({ length: getDaysInMonth(calViewYear, calViewMonth) }).map((_, i) => {
+                              const day = i + 1;
+                              const isSelected = selectedDate.getDate() === day && selectedDate.getMonth() === calViewMonth && selectedDate.getFullYear() === calViewYear;
+                              const isToday = new Date().getDate() === day && new Date().getMonth() === calViewMonth && new Date().getFullYear() === calViewYear;
+                              return (
+                                <button
+                                  key={day}
+                                  onClick={() => handleCalendarSelect(day)}
+                                  className={cn(
+                                    "text-xs rounded-full w-8 h-8 mx-auto flex items-center justify-center transition-colors",
+                                    isSelected ? "bg-amber-500 text-white font-bold" :
+                                    isToday ? "border border-amber-400 text-amber-600 font-semibold" :
+                                    "hover:bg-amber-50 dark:hover:bg-amber-900/30 text-gray-700 dark:text-gray-300"
+                                  )}
+                                >
+                                  {day}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {/* Butang hari ini */}
+                          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 text-center">
+                            <button
+                              onClick={() => { setSelectedDate(new Date()); setCalViewYear(new Date().getFullYear()); setCalViewMonth(new Date().getMonth()); setShowDatePicker(false); }}
+                              className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+                            >
+                              Hari Ini
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                </div>
               <Button
                 variant="outline"
                 size="sm"
