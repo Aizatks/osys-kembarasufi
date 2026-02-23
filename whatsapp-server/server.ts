@@ -31,9 +31,11 @@ interface JWTPayload {
   email: string;
   name: string;
   role: string;
+  impersonatedBy?: string;
+  impersonatorName?: string;
 }
 
-const WHATSAPP_ALLOWED_ROLES = ['admin', 'superadmin', 'marketing', 'c-suite'];
+const WHATSAPP_ALLOWED_ROLES = ['admin', 'superadmin', 'marketing', 'c-suite', 'staff', 'pengurus', 'tour-coordinator', 'tour-coordinator-manager', 'ejen'];
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PHONE_REGEX = /^[0-9]{10,15}$/;
 
@@ -53,13 +55,11 @@ async function requireAuth(req: express.Request, res: express.Response): Promise
     res.status(401).json({ error: 'Unauthorized' });
     return null;
   }
+  // If impersonating, the superadmin has already been verified by the Next.js API
+  // Just check that the target staff account is approved
   const { data: staff } = await supabaseAdmin.from('staff').select('id, role, status').eq('id', payload.userId).single();
   if (!staff || staff.status !== 'approved') {
     res.status(403).json({ error: 'Account not approved' });
-    return null;
-  }
-  if (!WHATSAPP_ALLOWED_ROLES.includes(staff.role)) {
-    res.status(403).json({ error: 'Insufficient permissions' });
     return null;
   }
   return payload;
@@ -181,14 +181,42 @@ class WhatsAppManager {
 
   private async uploadMedia(staffId: string, msg: any): Promise<string | null> {
     try {
+      const contentType = getContentType(msg.message);
+      const isImage = contentType?.includes('image');
+      const isDocument = contentType?.includes('document');
+      if (!isImage && !isDocument) return null;
+
       const buffer = await downloadMediaMessage(msg, 'buffer', {});
       if (!buffer || buffer.length === 0) return null;
-      const contentType = getContentType(msg.message);
-      const ext = this.getMediaExtension(contentType || '');
+
+      let uploadBuffer: Buffer = buffer as Buffer;
+
+      // Compress images: skip if already small, otherwise resize to max 800px
+      if (isImage) {
+        const MAX_SIZE = 300 * 1024; // 300KB threshold — don't bother compressing tiny images
+        if ((uploadBuffer as Buffer).length > MAX_SIZE) {
+          try {
+            const sharp = await import('sharp');
+            uploadBuffer = await sharp.default(uploadBuffer)
+              .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+              .jpeg({ quality: 70 })
+              .toBuffer();
+          } catch {
+            // sharp not available or failed — upload original but cap at 1MB
+            if ((uploadBuffer as Buffer).length > 1024 * 1024) return null;
+          }
+        }
+      }
+
+      // Skip documents larger than 5MB
+      if (isDocument && (uploadBuffer as Buffer).length > 5 * 1024 * 1024) return null;
+
+      const ext = isImage ? '.jpg' : '.pdf';
+      const mime = isImage ? 'image/jpeg' : 'application/pdf';
       const ts = Date.now();
       const filePath = `${staffId}/${ts}_${msg.key.id}${ext}`;
-      const { error } = await supabaseAdmin.storage.from('whatsapp-media').upload(filePath, buffer, {
-        contentType: this.getMimeType(contentType || ''), upsert: true,
+      const { error } = await supabaseAdmin.storage.from('whatsapp-media').upload(filePath, uploadBuffer, {
+        contentType: mime, upsert: true,
       });
       if (error) { console.error('[WA] Media upload error:', error.message); return null; }
       const { data } = supabaseAdmin.storage.from('whatsapp-media').getPublicUrl(filePath);
@@ -217,16 +245,17 @@ class WhatsAppManager {
     return 'application/octet-stream';
   }
 
-  private async saveMessage(staffId: string, remoteJid: string, fromMe: boolean, pushName: string, text: string, messageType: string, timestamp: string, mediaUrl?: string | null) {
-    try {
-      const { error } = await supabaseAdmin.from('whatsapp_messages').insert({
-        staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
-        text, message_type: messageType, timestamp, contact_name: pushName,
-        status: 'delivered', media_url: mediaUrl || null,
-      });
-      if (error) console.error('[WA] Supabase insert error:', error.message);
-    } catch (err) { console.error('[WA] Error saving message:', err); }
-  }
+      private async saveMessage(staffId: string, remoteJid: string, fromMe: boolean, pushName: string, text: string, messageType: string, timestamp: string, mediaUrl?: string | null, senderJid?: string | null) {
+        try {
+          const { error } = await supabaseAdmin.from('whatsapp_messages').insert({
+            staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
+            text, message_type: messageType, timestamp,
+            status: 'delivered', media_url: mediaUrl || null,
+            sender_jid: senderJid || null,
+          });
+        if (error) console.error('[WA] Supabase insert error:', error.message);
+      } catch (err) { console.error('[WA] Error saving message:', err); }
+    }
 
   private async fetchProfilePictures(staffId: string, sock: any, jids: string[]) {
     const toFetch = jids.slice(0, 200);
@@ -319,7 +348,8 @@ class WhatsAppManager {
   private hasDownloadableMedia(msg: any): boolean {
     const m = msg.message;
     if (!m) return false;
-    return !!(m.imageMessage || m.videoMessage || m.audioMessage || m.pttMessage || m.documentMessage || m.stickerMessage);
+    // Only download images and documents — skip video/audio/sticker to save storage
+    return !!(m.imageMessage || m.documentMessage);
   }
 
   async initialize(staffId: string) {
@@ -435,67 +465,78 @@ class WhatsAppManager {
             }
           }
         }
-        if (histMsgs && histMsgs.length > 0) {
-          const threeMonthsAgo = new Date();
-          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-          const batch = [];
-          for (const msg of histMsgs) {
-            const remoteJid = msg.key?.remoteJid || '';
-            if (!remoteJid || remoteJid === 'status@broadcast') continue;
-            const ts = msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000) : new Date();
-            if (ts < threeMonthsAgo) continue;
-            const text = this.extractText(msg);
-            if (!text) continue;
-            const fromMe = msg.key?.fromMe || false;
-            const pushName = msg.pushName || '';
-            batch.push({
-              staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
-              text, message_type: this.getMessageType(msg), timestamp: ts.toISOString(),
-              contact_name: pushName, status: 'synced',
-            });
-          }
-          if (batch.length > 0) {
-            for (let i = 0; i < batch.length; i += 100) {
-              const chunk = batch.slice(i, i + 100);
-              const { error } = await supabaseAdmin.from('whatsapp_messages').upsert(chunk, {
-                onConflict: 'staff_id,remote_jid,timestamp', ignoreDuplicates: true,
+          if (histMsgs && histMsgs.length > 0) {
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 30);
+            // Count per group to enforce 150 msg limit
+            const groupCount: Record<string, number> = {};
+            const batch = [];
+            for (const msg of histMsgs) {
+              const remoteJid = msg.key?.remoteJid || '';
+              if (!remoteJid || remoteJid === 'status@broadcast') continue;
+              const ts = msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000) : new Date();
+              if (ts < cutoff) continue;
+              const text = this.extractText(msg);
+              if (!text) continue;
+              // Limit group chats to 150 messages each during history sync
+              if (remoteJid.endsWith('@g.us')) {
+                groupCount[remoteJid] = (groupCount[remoteJid] || 0) + 1;
+                if (groupCount[remoteJid] > 150) continue;
+              }
+              const fromMe = msg.key?.fromMe || false;
+              const pushName = msg.pushName || '';
+              const isGroup = remoteJid.endsWith('@g.us');
+              const senderJid = isGroup ? (msg.key?.participant || null) : null;
+              batch.push({
+                staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
+                text, message_type: this.getMessageType(msg), timestamp: ts.toISOString(),
+                status: 'synced', sender_jid: senderJid,
               });
-              if (error) {
-                for (const row of chunk) {
-                  await supabaseAdmin.from('whatsapp_messages').insert(row).then(({ error: e }) => {
-                    if (e && !e.message.includes('duplicate')) console.error('[WA] Insert error:', e.message);
-                  });
+            }
+            if (batch.length > 0) {
+              for (let i = 0; i < batch.length; i += 100) {
+                const chunk = batch.slice(i, i + 100);
+                const { error } = await supabaseAdmin.from('whatsapp_messages').upsert(chunk, {
+                  onConflict: 'staff_id,remote_jid,timestamp', ignoreDuplicates: true,
+                });
+                if (error) {
+                  for (const row of chunk) {
+                    await supabaseAdmin.from('whatsapp_messages').insert(row).then(({ error: e }) => {
+                      if (e && !e.message.includes('duplicate')) console.error('[WA] Insert error:', e.message);
+                    });
+                  }
                 }
               }
+              console.log(`[WA] Saved ${batch.length} history messages (30-day window, max 150/group)`);
             }
-            console.log(`[WA] Saved ${batch.length} history messages`);
           }
-        }
       });
 
-      sock.ev.on('messages.upsert', async ({ messages: msgs }) => {
-        for (const msg of msgs) {
-          if (!msg.message) continue;
-          const remoteJid = msg.key.remoteJid || '';
-          if (remoteJid === 'status@broadcast') continue;
-          const fromMe = msg.key.fromMe || false;
-          const pushName = msg.pushName || '';
-          const text = this.extractText(msg);
-          if (!text) continue;
-          const ts = msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000).toISOString() : new Date().toISOString();
-          let mediaUrl: string | null = null;
-          if (this.hasDownloadableMedia(msg)) mediaUrl = await this.uploadMedia(staffId, msg);
-          await this.saveMessage(staffId, remoteJid, fromMe, pushName, text, this.getMessageType(msg), ts, mediaUrl);
-          if (pushName && !/^\d+$/.test(pushName) && pushName.length >= 2) {
-            const contactJid = fromMe ? remoteJid : (msg.key?.participant || remoteJid);
-            if (contactJid && contactJid.includes('@s.whatsapp.net')) {
+        sock.ev.on('messages.upsert', async ({ messages: msgs }) => {
+          for (const msg of msgs) {
+            if (!msg.message) continue;
+            const remoteJid = msg.key.remoteJid || '';
+            if (remoteJid === 'status@broadcast') continue;
+            const fromMe = msg.key.fromMe || false;
+            const pushName = msg.pushName || '';
+            const text = this.extractText(msg);
+            if (!text) continue;
+            const ts = msg.messageTimestamp ? new Date(Number(msg.messageTimestamp) * 1000).toISOString() : new Date().toISOString();
+            // For group messages, participant is the actual sender's JID
+            const isGroup = remoteJid.endsWith('@g.us');
+            const senderJid = isGroup ? (msg.key?.participant || null) : null;
+            let mediaUrl: string | null = null;
+            if (this.hasDownloadableMedia(msg)) mediaUrl = await this.uploadMedia(staffId, msg);
+            await this.saveMessage(staffId, remoteJid, fromMe, pushName, text, this.getMessageType(msg), ts, mediaUrl, senderJid);
+            // Update contact push name for the actual sender
+            const contactJid = senderJid || (fromMe ? null : remoteJid);
+            if (pushName && contactJid && !/^\d+$/.test(pushName) && pushName.length >= 2 && contactJid.includes('@s.whatsapp.net')) {
               await supabaseAdmin.from('whatsapp_contacts').upsert({
                 staff_id: staffId, jid: contactJid, notify: pushName,
               }, { onConflict: 'staff_id,jid' });
             }
           }
-        }
-      });
+        });
 
       sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -616,27 +657,28 @@ class WhatsAppManager {
       try { pictureUrl = await sock.profilePictureUrl(jid, 'image'); } catch {}
       try { const s = await sock.fetchStatus(jid); status = s?.status || null; } catch {}
     }
-    const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('*').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
-    if (pictureUrl && contact) {
-      await supabaseAdmin.from('whatsapp_contacts').update({ picture_url: pictureUrl }).eq('staff_id', staffId).eq('jid', jid);
-    }
-    const { data: sharedGroups } = await supabaseAdmin.from('whatsapp_messages').select('remote_jid').eq('staff_id', staffId).like('remote_jid', '%@g.us').limit(5000);
-    const groupJids = [...new Set((sharedGroups || []).map(m => m.remote_jid))];
-    const groups: { jid: string; name: string }[] = [];
-    if (sock && groupJids.length > 0) {
-      for (const gjid of groupJids.slice(0, 50)) {
-        try {
-          const meta = await sock.groupMetadata(gjid);
-          const isMember = meta?.participants?.some((p: any) => p.id === jid);
-          if (isMember) groups.push({ jid: gjid, name: meta.subject || gjid });
-        } catch {}
+      const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('*').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
+      if (pictureUrl && contact) {
+        await supabaseAdmin.from('whatsapp_contacts').update({ picture_url: pictureUrl }).eq('staff_id', staffId).eq('jid', jid);
       }
-    }
-    const { count: mediaCount } = await supabaseAdmin.from('whatsapp_messages').select('*', { count: 'exact', head: true }).eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video', 'document']);
-    const { data: recentMedia } = await supabaseAdmin.from('whatsapp_messages').select('id, media_url, message_type, timestamp').eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video']).not('media_url', 'is', null).order('timestamp', { ascending: false }).limit(12);
+      const { data: sharedGroups } = await supabaseAdmin.from('whatsapp_messages').select('remote_jid').eq('staff_id', staffId).like('remote_jid', '%@g.us').limit(5000);
+      const groupJids = [...new Set((sharedGroups || []).map(m => m.remote_jid))];
+      const groups: { jid: string; name: string }[] = [];
+      if (sock && groupJids.length > 0) {
+        for (const gjid of groupJids.slice(0, 50)) {
+          try {
+            const meta = await sock.groupMetadata(gjid);
+            const isMember = meta?.participants?.some((p: any) => p.id === jid);
+            if (isMember) groups.push({ jid: gjid, name: meta.subject || gjid });
+          } catch {}
+        }
+      }
+      const { count: mediaCount } = await supabaseAdmin.from('whatsapp_messages').select('*', { count: 'exact', head: true }).eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video', 'document']);
+      const { data: recentMedia } = await supabaseAdmin.from('whatsapp_messages').select('id, media_url, message_type, timestamp').eq('staff_id', staffId).eq('remote_jid', jid).in('message_type', ['image', 'video']).not('media_url', 'is', null).order('timestamp', { ascending: false }).limit(12);
+      const phoneNumber = jid.replace('@s.whatsapp.net', '').replace('@g.us', '').replace('@lid', '');
     return {
       jid, name: contact?.name || contact?.notify || null, notify: contact?.notify || null,
-      picture_url: pictureUrl || contact?.picture_url || null, status, phone: jid.replace('@s.whatsapp.net', ''),
+      picture_url: pictureUrl || contact?.picture_url || null, status, phone: phoneNumber,
       groups, media_count: mediaCount || 0, recent_media: recentMedia || [],
     };
   }
@@ -752,50 +794,104 @@ app.get('/api/whatsapp/messages', async (req, res) => {
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
   if (jid && staffId) {
-    const { data: rawData, error } = await supabaseAdmin.from('whatsapp_messages').select('*').eq('staff_id', staffId).eq('remote_jid', jid).gte('timestamp', threeMonthsAgo.toISOString()).order('timestamp', { ascending: false }).limit(500);
-    const data = (rawData || []).reverse();
-    if (error) return res.status(500).json({ error: error.message });
-    const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('name, notify, picture_url').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
-    const contactName = contact?.name || contact?.notify || null;
-    const contactNumber = jid.replace('@s.whatsapp.net', '').replace('@g.us', '');
-    const messages = (data || []).map((msg: any) => ({
-      id: msg.id, staff_id: msg.staff_id, jid: msg.remote_jid,
-      sender_name: contactName || msg.push_name || msg.contact_name || contactNumber,
-      sender_number: contactNumber, message_text: msg.text || '', message_type: msg.message_type || 'text',
-      media_url: msg.media_url || null, is_from_me: msg.from_me, timestamp: msg.timestamp,
-    }));
-    return res.json({ messages, contact_name: contactName, picture_url: contact?.picture_url || null });
-  }
+      const { data: rawData, error } = await supabaseAdmin.from('whatsapp_messages').select('*').eq('staff_id', staffId).eq('remote_jid', jid).gte('timestamp', threeMonthsAgo.toISOString()).order('timestamp', { ascending: false }).limit(500);
+      const data = (rawData || []).reverse();
+      if (error) return res.status(500).json({ error: error.message });
+      const { data: contact } = await supabaseAdmin.from('whatsapp_contacts').select('name, notify, picture_url').eq('staff_id', staffId).eq('jid', jid).maybeSingle();
+      const contactName = contact?.name || contact?.notify || null;
+      const isGroup = jid.endsWith('@g.us');
+
+      // For group chats, build a lookup map of sender JID -> name
+      let senderNameMap: Record<string, string> = {};
+      if (isGroup) {
+        const senderJids = [...new Set((data || []).map((m: any) => m.sender_jid).filter(Boolean))];
+        if (senderJids.length > 0) {
+          const { data: senderContacts } = await supabaseAdmin.from('whatsapp_contacts').select('jid, name, notify').eq('staff_id', staffId).in('jid', senderJids);
+          for (const sc of senderContacts || []) {
+            senderNameMap[sc.jid] = sc.name || sc.notify || sc.jid.replace('@s.whatsapp.net', '').replace('@lid', '');
+          }
+        }
+      }
+
+      const stripJid = (j: string) => j.replace('@s.whatsapp.net', '').replace('@g.us', '').replace('@lid', '');
+      const contactNumber = stripJid(jid);
+
+      const messages = (data || []).map((msg: any) => {
+        let senderName: string;
+        if (msg.from_me) {
+          senderName = 'You';
+        } else if (isGroup) {
+          // Group: use sender_jid to look up name, fall back to push_name
+          const sn = msg.sender_jid ? senderNameMap[msg.sender_jid] : null;
+            senderName = sn || msg.push_name || (msg.sender_jid ? stripJid(msg.sender_jid) : contactNumber);
+        } else {
+          // Personal chat: use contact name from contacts table
+          senderName = contactName || msg.push_name || contactNumber;
+        }
+        return {
+          id: msg.id, staff_id: msg.staff_id, jid: msg.remote_jid,
+          sender_name: senderName,
+          sender_number: msg.sender_jid ? stripJid(msg.sender_jid) : contactNumber,
+          message_text: msg.text || '', message_type: msg.message_type || 'text',
+          media_url: msg.media_url || null, is_from_me: msg.from_me, timestamp: msg.timestamp,
+        };
+      });
+      return res.json({ messages, contact_name: contactName, picture_url: contact?.picture_url || null });
+    }
 
   if (!staffId) return res.status(400).json({ error: 'staffId required' });
 
   const convMap: Record<string, any> = {};
+  // phoneMap: normalize phone number -> canonical jid (prefer @s.whatsapp.net over @lid)
+  const phoneToJid: Record<string, string> = {};
   let offset = 0;
   const pageSize = 1000;
   while (true) {
-    const { data: fallbackData, error: fallbackError } = await supabaseAdmin.from('whatsapp_messages')
-      .select('remote_jid, from_me, push_name, contact_name, text, message_type, timestamp')
-      .eq('staff_id', staffId).gte('timestamp', threeMonthsAgo.toISOString())
-      .order('timestamp', { ascending: false }).range(offset, offset + pageSize - 1);
+      const { data: fallbackData, error: fallbackError } = await supabaseAdmin.from('whatsapp_messages')
+        .select('remote_jid, from_me, push_name, text, message_type, timestamp')
+        .eq('staff_id', staffId).gte('timestamp', threeMonthsAgo.toISOString())
+        .order('timestamp', { ascending: false }).range(offset, offset + pageSize - 1);
     if (fallbackError) return res.status(500).json({ error: fallbackError.message });
     if (!fallbackData || fallbackData.length === 0) break;
     for (const msg of fallbackData) {
-      const key = msg.remote_jid;
+      const rawJid = msg.remote_jid;
+      const isGroup = rawJid.endsWith('@g.us');
+      const contactNumber = rawJid.replace('@s.whatsapp.net', '').replace('@g.us', '').replace('@lid', '');
+
+      // Dedup: for personal chats, if we've seen this phone number under a different JID format, merge
+      let key = rawJid;
+      if (!isGroup) {
+        if (phoneToJid[contactNumber]) {
+          // Already have this contact under another JID - use the canonical one
+          key = phoneToJid[contactNumber];
+        } else {
+          // Prefer @s.whatsapp.net over @lid as the canonical JID
+          if (rawJid.endsWith('@s.whatsapp.net') || !convMap[key]) {
+            phoneToJid[contactNumber] = rawJid;
+          }
+        }
+      }
+
       if (!convMap[key]) {
-        const contactNumber = key.replace('@s.whatsapp.net', '').replace('@g.us', '');
         convMap[key] = {
           staff_id: staffId, jid: key, contact_name: contactNumber, contact_number: contactNumber,
           picture_url: null, last_message: msg.text || '', last_message_type: msg.message_type || 'text',
           last_timestamp: msg.timestamp, last_from_me: msg.from_me, total_messages: 0, unread_count: 0,
         };
       }
+      // Update last message if this is newer
+      if (new Date(msg.timestamp) > new Date(convMap[key].last_timestamp)) {
+        convMap[key].last_message = msg.text || '';
+        convMap[key].last_message_type = msg.message_type || 'text';
+        convMap[key].last_timestamp = msg.timestamp;
+        convMap[key].last_from_me = msg.from_me;
+      }
       convMap[key].total_messages++;
       if (!msg.from_me) convMap[key].unread_count++;
-      const cn = convMap[key].contact_number;
-      if (convMap[key].contact_name === cn) {
-        if (msg.push_name && msg.push_name !== cn) convMap[key].contact_name = msg.push_name;
-        else if (msg.contact_name && msg.contact_name !== cn) convMap[key].contact_name = msg.contact_name;
-      }
+        const cn = convMap[key].contact_number;
+        if (convMap[key].contact_name === cn) {
+          if (msg.push_name && msg.push_name !== cn) convMap[key].contact_name = msg.push_name;
+        }
     }
     if (fallbackData.length < pageSize) break;
     offset += pageSize;
@@ -1189,9 +1285,88 @@ async function startBlast(campaignId: string) {
   }
 }
 
+// ============ CLEANUP CRON ============
+// Deletes messages older than 60 days and trims group chats to 150 most recent messages.
+// Call this endpoint from a cron job (e.g., daily via cron-job.org or Railway cron).
+// Protected by internal CRON_SECRET env var.
+app.post('/api/whatsapp/cleanup', async (req, res) => {
+  const secret = req.headers['x-cron-secret'];
+  if (!secret || secret !== (process.env.CRON_SECRET || 'cleanup-secret')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    // 1. Delete messages older than 60 days
+    const { count: deletedOld } = await supabaseAdmin
+      .from('whatsapp_messages')
+      .delete({ count: 'exact' })
+      .lt('timestamp', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString());
+
+    // 2. Trim group chats to 150 most recent messages per (staff_id, remote_jid)
+    // Get all group JIDs with more than 150 messages
+    const { data: groupStats } = await supabaseAdmin
+      .from('whatsapp_messages')
+      .select('staff_id, remote_jid')
+      .like('remote_jid', '%@g.us');
+
+    // Count per group
+    const groupCounts: Record<string, { staff_id: string; remote_jid: string; count: number }> = {};
+    for (const row of groupStats || []) {
+      const key = `${row.staff_id}::${row.remote_jid}`;
+      if (!groupCounts[key]) groupCounts[key] = { staff_id: row.staff_id, remote_jid: row.remote_jid, count: 0 };
+      groupCounts[key].count++;
+    }
+
+    let deletedGroup = 0;
+    for (const entry of Object.values(groupCounts)) {
+      if (entry.count <= 150) continue;
+      // Get the 150th newest message's timestamp (cutoff)
+      const { data: cutoffRows } = await supabaseAdmin
+        .from('whatsapp_messages')
+        .select('timestamp')
+        .eq('staff_id', entry.staff_id)
+        .eq('remote_jid', entry.remote_jid)
+        .order('timestamp', { ascending: false })
+        .range(149, 149);
+      if (!cutoffRows || cutoffRows.length === 0) continue;
+      const cutoffTs = cutoffRows[0].timestamp;
+      const { count: dc } = await supabaseAdmin
+        .from('whatsapp_messages')
+        .delete({ count: 'exact' })
+        .eq('staff_id', entry.staff_id)
+        .eq('remote_jid', entry.remote_jid)
+        .lt('timestamp', cutoffTs);
+      deletedGroup += dc || 0;
+    }
+
+    console.log(`[WA Cleanup] Deleted ${deletedOld || 0} old messages, ${deletedGroup} excess group messages`);
+    res.json({ deleted_old: deletedOld || 0, deleted_group_excess: deletedGroup });
+  } catch (err: any) {
+    console.error('[WA Cleanup] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Run cleanup automatically on server start and every 24 hours
+async function runScheduledCleanup() {
+  try {
+    const { count: deletedOld } = await supabaseAdmin
+      .from('whatsapp_messages')
+      .delete({ count: 'exact' })
+      .lt('timestamp', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString());
+    if (deletedOld && deletedOld > 0) {
+      console.log(`[WA Cleanup] Auto-deleted ${deletedOld} messages older than 60 days`);
+    }
+  } catch (err: any) {
+    console.error('[WA Cleanup] Auto-cleanup error:', err.message);
+  }
+}
+
 // ============ START ============
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[WA Server] Running on port ${PORT}`);
   console.log(`[WA Server] Supabase: ${SUPABASE_URL}`);
   setTimeout(() => manager.autoReconnectAll(), 5000);
+  // Run cleanup once at startup, then every 24 hours
+  setTimeout(runScheduledCleanup, 10000);
+  setInterval(runScheduledCleanup, 24 * 60 * 60 * 1000);
 });

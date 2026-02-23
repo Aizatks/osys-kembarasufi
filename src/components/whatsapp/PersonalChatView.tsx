@@ -208,7 +208,7 @@ export function PersonalChatView() {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           staffId,
-          number: selectedChat.jid.replace("@s.whatsapp.net", "").replace("@g.us", ""),
+          number: selectedChat.jid.replace("@s.whatsapp.net", "").replace("@g.us", "").replace("@lid", ""),
           message: replyText,
           jid: selectedChat.jid,
         }),
@@ -369,7 +369,7 @@ export function PersonalChatView() {
   const ContactInfoPanel = () => {
     if (!showContactInfo || !selectedChat) return null;
     const isGroup = selectedChat.jid.includes("@g.us");
-    const phone = selectedChat.jid.replace('@s.whatsapp.net', '').replace('@g.us', '');
+    const phone = selectedChat.jid.replace('@s.whatsapp.net', '').replace('@g.us', '').replace('@lid', '');
 
     return (
       <div className="w-80 border-l bg-white dark:bg-slate-900 flex flex-col h-full shrink-0 overflow-y-auto">
@@ -514,7 +514,7 @@ export function PersonalChatView() {
               <div className="flex-1 min-w-0 text-left">
                 <p className="font-semibold text-sm truncate">{selectedChat.contact_name}</p>
                 <p className="text-[11px] text-slate-500">
-                  {selectedChat.jid.includes("@g.us") ? "Kumpulan" : `+${selectedChat.jid.replace('@s.whatsapp.net', '')}`}
+                  {selectedChat.jid.includes("@g.us") ? "Kumpulan" : `+${selectedChat.jid.replace('@s.whatsapp.net', '').replace('@lid', '')}`}
                 </p>
               </div>
             </button>
@@ -550,7 +550,7 @@ export function PersonalChatView() {
                     <button
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 rounded-b-lg"
                       onClick={() => {
-                        navigator.clipboard.writeText(selectedChat.jid.replace('@s.whatsapp.net', '').replace('@g.us', ''));
+                        navigator.clipboard.writeText(selectedChat.jid.replace('@s.whatsapp.net', '').replace('@g.us', '').replace('@lid', ''));
                         toast.success("Nombor disalin");
                         setShowChatMenu(false);
                       }}
