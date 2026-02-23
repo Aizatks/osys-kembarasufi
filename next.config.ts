@@ -21,6 +21,13 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'jimp', 'sharp'],
+  allowedDevOrigins: ['*.orchids.cloud'],
+  turbopack: {
+    resolveAlias: {
+      jimp: { browser: false },
+      sharp: { browser: false },
+    },
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
