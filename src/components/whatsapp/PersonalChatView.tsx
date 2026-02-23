@@ -398,7 +398,7 @@ export function PersonalChatView() {
                 </div>
               )}
               <p className="font-bold text-base text-center">{contactProfile?.name || contactProfile?.notify || selectedChat.contact_name}</p>
-              {!isGroup && <p className="text-sm text-slate-500">+{phone}</p>}
+                {!isGroup && <p className="text-sm text-slate-500">{phone.includes('@lid') ? 'WhatsApp' : `+${phone}`}</p>}
               {contactProfile?.status && (
                 <p className="text-xs text-slate-400 mt-1 text-center italic">&ldquo;{contactProfile.status}&rdquo;</p>
               )}
@@ -421,18 +421,18 @@ export function PersonalChatView() {
               </div>
             )}
 
-            {!isGroup && (
-              <div className="px-4 py-3 border-b">
-                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Nombor Telefon</p>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(phone); toast.success("Nombor disalin"); }}
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-                >
-                  <Phone className="w-3.5 h-3.5" /> +{phone}
-                  <Copy className="w-3 h-3 text-slate-400" />
-                </button>
-              </div>
-            )}
+              {!isGroup && !phone.includes('@lid') && (
+                <div className="px-4 py-3 border-b">
+                  <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">Nombor Telefon</p>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(phone); toast.success("Nombor disalin"); }}
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    <Phone className="w-3.5 h-3.5" /> +{phone}
+                    <Copy className="w-3 h-3 text-slate-400" />
+                  </button>
+                </div>
+              )}
 
             {contactProfile && contactProfile.recent_media.length > 0 && (
               <div className="px-4 py-3 border-b">
@@ -511,12 +511,12 @@ export function PersonalChatView() {
                   {selectedChat.jid.includes("@g.us") ? <Users className="w-4 h-4" /> : getInitials(selectedChat.contact_name)}
                 </div>
               )}
-              <div className="flex-1 min-w-0 text-left">
-                <p className="font-semibold text-sm truncate">{selectedChat.contact_name}</p>
-                <p className="text-[11px] text-slate-500">
-                  {selectedChat.jid.includes("@g.us") ? "Kumpulan" : `+${selectedChat.jid.replace('@s.whatsapp.net', '').replace('@lid', '')}`}
-                </p>
-              </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="font-semibold text-sm truncate">{selectedChat.contact_name}</p>
+                  <p className="text-[11px] text-slate-500">
+                    {selectedChat.jid.includes("@g.us") ? "Kumpulan" : selectedChat.jid.includes("@lid") ? "WhatsApp" : `+${selectedChat.jid.replace('@s.whatsapp.net', '')}`}
+                  </p>
+                </div>
             </button>
             <div className="flex items-center gap-1 shrink-0">
               <div className="relative" ref={menuRef}>

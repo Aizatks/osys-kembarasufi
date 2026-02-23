@@ -458,8 +458,9 @@ class WhatsAppManager {
             const cutoff = new Date();
             cutoff.setDate(cutoff.getDate() - 30);
             // Count per group to enforce 150 msg limit
-            const groupCount: Record<string, number> = {};
-            const batch = [];
+              const groupCount: Record<string, number> = {};
+              const contactNameMap: Record<string, string> = {};
+              const batch = [];
             for (const msg of histMsgs) {
               const remoteJid = msg.key?.remoteJid || '';
               if (!remoteJid || remoteJid === 'status@broadcast') continue;
@@ -472,11 +473,18 @@ class WhatsAppManager {
                 groupCount[remoteJid] = (groupCount[remoteJid] || 0) + 1;
                 if (groupCount[remoteJid] > 150) continue;
               }
-              const fromMe = msg.key?.fromMe || false;
-              const pushName = msg.pushName || '';
-              const isGroup = remoteJid.endsWith('@g.us');
-              const senderJid = isGroup ? (msg.key?.participant || null) : null;
-              batch.push({
+                const fromMe = msg.key?.fromMe || false;
+                const pushName = msg.pushName || '';
+                const isGroup = remoteJid.endsWith('@g.us');
+                const senderJid = isGroup ? (msg.key?.participant || null) : null;
+                // Save push_name for @lid and @s.whatsapp.net contacts from history
+                if (!fromMe && pushName && pushName.length >= 2 && !/^\d+$/.test(pushName)) {
+                  const contactJid = senderJid || remoteJid;
+                  if (contactJid.includes('@s.whatsapp.net') || contactJid.includes('@lid')) {
+                    contactNameMap[contactJid] = pushName;
+                  }
+                }
+                batch.push({
                 staff_id: staffId, remote_jid: remoteJid, from_me: fromMe, push_name: pushName,
                 text, message_type: this.getMessageType(msg), timestamp: ts.toISOString(),
                 status: 'synced', sender_jid: senderJid,
@@ -496,10 +504,19 @@ class WhatsAppManager {
                   }
                 }
               }
-              console.log(`[WA] Saved ${batch.length} history messages (30-day window, max 150/group)`);
+                console.log(`[WA] Saved ${batch.length} history messages (30-day window, max 150/group)`);
+              }
+              // Flush contact names collected from history push_name
+              const nameEntries = Object.entries(contactNameMap);
+              if (nameEntries.length > 0) {
+                const nameBatch = nameEntries.map(([jid, notify]) => ({ staff_id: staffId, jid, notify }));
+                for (let i = 0; i < nameBatch.length; i += 100) {
+                  await supabaseAdmin.from('whatsapp_contacts').upsert(nameBatch.slice(i, i + 100), { onConflict: 'staff_id,jid' });
+                }
+                console.log(`[WA] Saved ${nameBatch.length} contact names from history push_name`);
+              }
             }
-          }
-      });
+        });
 
         sock.ev.on('messages.upsert', async ({ messages: msgs }) => {
           for (const msg of msgs) {
@@ -517,13 +534,14 @@ class WhatsAppManager {
             let mediaUrl: string | null = null;
             if (this.hasDownloadableMedia(msg)) mediaUrl = await this.uploadMedia(staffId, msg);
             await this.saveMessage(staffId, remoteJid, fromMe, pushName, text, this.getMessageType(msg), ts, mediaUrl, senderJid);
-            // Update contact push name for the actual sender
-            const contactJid = senderJid || (fromMe ? null : remoteJid);
-            if (pushName && contactJid && !/^\d+$/.test(pushName) && pushName.length >= 2 && contactJid.includes('@s.whatsapp.net')) {
-              await supabaseAdmin.from('whatsapp_contacts').upsert({
-                staff_id: staffId, jid: contactJid, notify: pushName,
-              }, { onConflict: 'staff_id,jid' });
-            }
+              // Update contact push name for the actual sender (support both @s.whatsapp.net and @lid)
+              const contactJid = senderJid || (fromMe ? null : remoteJid);
+              if (pushName && contactJid && !/^\d+$/.test(pushName) && pushName.length >= 2 &&
+                (contactJid.includes('@s.whatsapp.net') || contactJid.includes('@lid'))) {
+                await supabaseAdmin.from('whatsapp_contacts').upsert({
+                  staff_id: staffId, jid: contactJid, notify: pushName,
+                }, { onConflict: 'staff_id,jid' });
+              }
           }
         });
 
@@ -861,13 +879,16 @@ app.get('/api/whatsapp/messages', async (req, res) => {
         }
       }
 
-      if (!convMap[key]) {
-        convMap[key] = {
-          staff_id: staffId, jid: key, contact_name: contactNumber, contact_number: contactNumber,
-          picture_url: null, last_message: msg.text || '', last_message_type: msg.message_type || 'text',
-          last_timestamp: msg.timestamp, last_from_me: msg.from_me, total_messages: 0, unread_count: 0,
-        };
-      }
+        if (!convMap[key]) {
+          // For @lid JIDs, don't use the raw numeric ID as contact_name — use empty string so contacts table can fill it
+          const isLid = key.endsWith('@lid');
+          const defaultName = isLid ? '' : contactNumber;
+          convMap[key] = {
+            staff_id: staffId, jid: key, contact_name: defaultName, contact_number: isLid ? '' : contactNumber,
+            picture_url: null, last_message: msg.text || '', last_message_type: msg.message_type || 'text',
+            last_timestamp: msg.timestamp, last_from_me: msg.from_me, total_messages: 0, unread_count: 0,
+          };
+        }
       // Update last message if this is newer
       if (new Date(msg.timestamp) > new Date(convMap[key].last_timestamp)) {
         convMap[key].last_message = msg.text || '';
@@ -875,11 +896,15 @@ app.get('/api/whatsapp/messages', async (req, res) => {
         convMap[key].last_timestamp = msg.timestamp;
         convMap[key].last_from_me = msg.from_me;
       }
-      convMap[key].total_messages++;
-      if (!msg.from_me) convMap[key].unread_count++;
+        convMap[key].total_messages++;
+        if (!msg.from_me) convMap[key].unread_count++;
         const cn = convMap[key].contact_number;
-        if (convMap[key].contact_name === cn) {
-          if (msg.push_name && msg.push_name !== cn) convMap[key].contact_name = msg.push_name;
+        const isLid = key.endsWith('@lid');
+        // Update name from push_name if current name is empty, a raw number, or raw @lid number
+        if (msg.push_name && !/^\d+$/.test(msg.push_name) && !msg.push_name.includes('@lid') && msg.push_name.length >= 2) {
+          if (!convMap[key].contact_name || convMap[key].contact_name === cn || isLid) {
+            convMap[key].contact_name = msg.push_name;
+          }
         }
     }
     if (fallbackData.length < pageSize) break;
