@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
       const allStaff = searchParams.get('all') === 'true';
       const startDateOverride = searchParams.get('start_date');
       const endDateOverride = searchParams.get('end_date');
+      const categoryFilter = searchParams.get('category');
 
     const isAdmin = ['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role);
 
@@ -118,37 +119,39 @@ export async function GET(request: NextRequest) {
       const endDate = `${yearNum}-12-31`;
 
       if (allStaff && isAdmin) {
-        const { data: staffList } = await supabase
-          .from('staff')
-          .select('id, name, category')
-          .eq('status', 'approved');
+          let staffQuery = supabase
+            .from('staff')
+            .select('id, name, category')
+            .eq('status', 'approved');
+          if (categoryFilter) staffQuery = staffQuery.eq('category', categoryFilter);
+          const { data: staffList } = await staffQuery;
 
-        const results = await Promise.all(
-          (staffList || []).map(async (staff) => {
-            const { data: tasks } = await supabase
-              .from('daily_tasks')
-              .select('is_completed, points_earned, template:task_templates(points, indicator_type, weightage)')
-              .eq('staff_id', staff.id)
-              .gte('task_date', startDate)
-              .lte('task_date', endDate);
+          const results = await Promise.all(
+            (staffList || []).map(async (staff) => {
+              const { data: tasks } = await supabase
+                .from('daily_tasks')
+                .select('is_completed, points_earned, template:task_templates(points, indicator_type, weightage)')
+                .eq('staff_id', staff.id)
+                .gte('task_date', startDate)
+                .lte('task_date', endDate);
 
-            const scores = calculateWeightedScore(tasks || []);
+              const scores = calculateWeightedScore(tasks || []);
 
-            return {
-              staff_id: staff.id,
-              staff_name: staff.name,
-              category: staff.category,
-              ...scores,
-              grade: getGrade(scores.completionRate),
-              ...getBonusRecommendation(scores.completionRate),
-            };
-          })
-        );
+              return {
+                staff_id: staff.id,
+                staff_name: staff.name,
+                category: staff.category,
+                ...scores,
+                grade: getGrade(scores.completionRate),
+                ...getBonusRecommendation(scores.completionRate),
+              };
+            })
+          );
 
-        results.sort((a, b) => b.completionRate - a.completionRate);
+          results.sort((a, b) => b.completionRate - a.completionRate);
 
-        return NextResponse.json({ scores: results, year: yearNum });
-      }
+          return NextResponse.json({ scores: results, year: yearNum });
+        }
 
       const staffId = staffIdParam || payload.userId;
 
@@ -234,11 +237,13 @@ export async function GET(request: NextRequest) {
     const startDateStr = formatDateLocal(periodStart);
     const endDateStr = formatDateLocal(periodEnd);
 
-    if (allStaff && isAdmin) {
-      const { data: staffList } = await supabase
-        .from('staff')
-        .select('id, name, category')
-        .eq('status', 'approved');
+      if (allStaff && isAdmin) {
+        let staffQuery = supabase
+          .from('staff')
+          .select('id, name, category')
+          .eq('status', 'approved');
+        if (categoryFilter) staffQuery = staffQuery.eq('category', categoryFilter);
+        const { data: staffList } = await staffQuery;
 
       const results = await Promise.all(
         (staffList || []).map(async (staff) => {

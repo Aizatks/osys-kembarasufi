@@ -97,13 +97,13 @@ export function TaskScoreDashboard() {
   const [yearlyReport, setYearlyReport] = useState<YearlyReport | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
 
-  const ROLES = ["Sales", "Ejen", "Marketing", "Admin", "PIC"];
+  const ROLES = ["Sales", "Ejen", "Marketing", "Media", "Admin", "PIC"];
 
   useEffect(() => {
     if (isAdmin) {
       fetchScores();
     }
-  }, [isAdmin, period, selectedYear, selectedMonth, dateRangeStart, dateRangeEnd]);
+  }, [isAdmin, period, selectedYear, selectedMonth, dateRangeStart, dateRangeEnd, selectedRole]);
 
   const filteredScores = scores.filter(s => {
     if (selectedRole === "All") return true;
@@ -114,7 +114,7 @@ export function TaskScoreDashboard() {
     setLoading(true);
     try {
       const token = localStorage.getItem("auth_token");
-      let url = `/api/tasks/scores?all=true&period=${period}`;
+      let url = `/api/tasks/scores?all=true&period=${period}${selectedRole !== "All" ? `&category=${encodeURIComponent(selectedRole)}` : ""}`;
       if (period === "yearly") {
         url += `&year=${selectedYear}`;
       } else if (period === "monthly") {
