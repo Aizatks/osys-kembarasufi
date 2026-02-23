@@ -20,9 +20,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'jimp', 'sharp'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
