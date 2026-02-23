@@ -1,18 +1,19 @@
 FROM node:20-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 make g++ git \
+    python3 make g++ git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+RUN git config --global url."https://github.com/".insteadOf "git@github.com:" && \
+    git config --global url."https://".insteadOf "git://"
 
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install --production=false --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
-COPY . .
+COPY tsconfig.json server.ts ./
 RUN npx tsc
-
-RUN npm prune --production --legacy-peer-deps
 
 EXPOSE 3001
 
