@@ -127,11 +127,11 @@ export async function GET(request: NextRequest) {
     }
 
       const { data: allTasks, error: finalError } = await supabase
-        .from('daily_tasks')
-        .select(`
-          *,
-          template:task_templates(id, title, description, category, points, is_mandatory, is_active, sort_order)
-        `)
+          .from('daily_tasks')
+          .select(`
+            *,
+            template:task_templates(id, title, description, category, points, is_mandatory, is_active, sort_order, attachment_requirement)
+          `)
         .eq('staff_id', staffId)
         .gte('task_date', formatDateLocal(periodStart))
         .lte('task_date', formatDateLocal(periodEnd))
@@ -196,37 +196,44 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Token tidak sah' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { id, is_completed, notes } = body;
+      const body = await request.json();
+      const { id, is_completed, notes } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
-    }
+      if (!id) {
+        return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
+      }
 
-    const { data: task, error: fetchError } = await supabase
-      .from('daily_tasks')
-      .select('*, template:task_templates(points)')
-      .eq('id', id)
-      .single();
+      const { data: task, error: fetchError } = await supabase
+        .from('daily_tasks')
+        .select('*, template:task_templates(points, attachment_requirement)')
+        .eq('id', id)
+        .single();
 
-    if (fetchError || !task) {
-      return NextResponse.json({ error: 'Task tidak dijumpai' }, { status: 404 });
-    }
+      if (fetchError || !task) {
+        return NextResponse.json({ error: 'Task tidak dijumpai' }, { status: 404 });
+      }
 
-    const isAdmin = ['admin', 'superadmin'].includes(payload.role);
-    if (!isAdmin && task.staff_id !== payload.userId) {
-      return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
-    }
+      const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+      if (!isAdmin && task.staff_id !== payload.userId) {
+        return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
+      }
 
-    const updateData: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
+      // Block completion if attachment is required but not uploaded
+      const attachReq = task.template?.attachment_requirement;
+      const requiresAttachment = attachReq && attachReq !== 'none' && attachReq !== 'Tiada';
+      if (is_completed === true && requiresAttachment && !task.attachment_url) {
+        return NextResponse.json({ error: `Sila lampirkan ${attachReq} dahulu sebelum menandakan task ini selesai.` }, { status: 422 });
+      }
 
-    if (is_completed !== undefined) {
-      updateData.is_completed = is_completed;
-      updateData.completed_at = is_completed ? new Date().toISOString() : null;
-      updateData.points_earned = is_completed ? (task.template?.points || 0) : 0;
-    }
+      const updateData: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (is_completed !== undefined) {
+        updateData.is_completed = is_completed;
+        updateData.completed_at = is_completed ? new Date().toISOString() : null;
+        updateData.points_earned = is_completed ? (task.template?.points || 0) : 0;
+      }
 
     if (notes !== undefined) {
       updateData.notes = notes;
