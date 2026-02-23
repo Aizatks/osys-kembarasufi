@@ -192,21 +192,10 @@ class WhatsAppManager {
       let uploadBuffer: Buffer = buffer as Buffer;
 
       // Compress images: skip if already small, otherwise resize to max 800px
-      if (isImage) {
-        const MAX_SIZE = 300 * 1024; // 300KB threshold — don't bother compressing tiny images
-        if ((uploadBuffer as Buffer).length > MAX_SIZE) {
-          try {
-            const sharp = await import('sharp');
-            uploadBuffer = await sharp.default(uploadBuffer)
-              .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
-              .jpeg({ quality: 70 })
-              .toBuffer();
-          } catch {
-            // sharp not available or failed — upload original but cap at 1MB
-            if ((uploadBuffer as Buffer).length > 1024 * 1024) return null;
-          }
+        if (isImage) {
+          // Cap images at 1MB — no sharp compression
+          if ((uploadBuffer as Buffer).length > 1024 * 1024) return null;
         }
-      }
 
       // Skip documents larger than 5MB
       if (isDocument && (uploadBuffer as Buffer).length > 5 * 1024 * 1024) return null;
