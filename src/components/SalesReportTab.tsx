@@ -44,7 +44,7 @@ type SortDirection = "asc" | "desc" | null;
 
 const ALLOWED_STAFF_NAMES = [
   "Hazirah", "Haini", "Farah", "Ammar", 
-  "Alieya", "Airienna", "Sarah", "Diyana"
+  "Alieya", "Airienna", "Sarah", "Diyana", "Arina"
 ];
 
 const MONTHS = [
