@@ -30,6 +30,7 @@ interface SalesReport {
   status_bayaran: string;
   status_peserta: string;
   nama_wakil_peserta: string;
+  lead_from: string;
   remark: string;
   staff?: { id: string; name: string };
 }
@@ -54,6 +55,7 @@ const MONTHS = [
 
 const STATUS_BAYARAN = ["Deposit", "Full Payment", "Pending", "Cancelled"];
 const STATUS_PESERTA = ["BARU", "LAMA/REPEAT"];
+const LEAD_FROM_OPTIONS = ["ADS", "ADS FB", "ADS TIKTOK", "ADS TIKTOK LIVE", "PS", "REFERRAL", "WEBSITE", "WHATSAPP", "WALK-IN", "HAIKAL", "LAIN-LAIN"];
 
 function getDefaultDateRange() {
   const now = new Date();
@@ -112,6 +114,7 @@ export function SalesReportTab() {
     status_bayaran: "Deposit",
     status_peserta: "BARU",
     nama_wakil_peserta: "",
+    lead_from: "",
     remark: "",
   });
 
@@ -529,6 +532,7 @@ export function SalesReportTab() {
       status_bayaran: report.status_bayaran || "Deposit",
       status_peserta: report.status_peserta || "BARU",
       nama_wakil_peserta: report.nama_wakil_peserta || "",
+      lead_from: report.lead_from || "",
       remark: report.remark || "",
     });
     setIsDialogOpen(true);
@@ -915,9 +919,21 @@ export function SalesReportTab() {
                     <Input value={formData.nama_wakil_peserta} onChange={(e) => setFormData({...formData, nama_wakil_peserta: e.target.value})} />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Remark</Label>
-                  <Input value={formData.remark} onChange={(e) => setFormData({...formData, remark: e.target.value})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Close From (Sumber Lead)</Label>
+                    <Select value={formData.lead_from || "none"} onValueChange={(v) => setFormData({...formData, lead_from: v === "none" ? "" : v})}>
+                      <SelectTrigger><SelectValue placeholder="Pilih sumber..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">- Tiada -</SelectItem>
+                        {LEAD_FROM_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Remark</Label>
+                    <Input value={formData.remark} onChange={(e) => setFormData({...formData, remark: e.target.value})} />
+                  </div>
                 </div>
                 <Button onClick={handleSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700">
                   {editingReport ? "Kemaskini" : "Simpan"}
@@ -1188,6 +1204,7 @@ export function SalesReportTab() {
                         Wakil {getSortIcon("nama_wakil_peserta")}
                       </div>
                     </TableHead>
+                    <TableHead className="font-semibold">Sumber</TableHead>
                     {user?.role === "superadmin" && (
                       <TableHead 
                         className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
@@ -1241,6 +1258,15 @@ export function SalesReportTab() {
                           </span>
                         </TableCell>
                         <TableCell className="max-w-[120px] truncate">{report.nama_wakil_peserta}</TableCell>
+                        <TableCell>
+                          {report.lead_from ? (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 whitespace-nowrap">
+                              {report.lead_from}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </TableCell>
                         {user?.role === "superadmin" && (
                           <TableCell className="text-sm text-gray-600">{report.staff?.name || "-"}</TableCell>
                         )}

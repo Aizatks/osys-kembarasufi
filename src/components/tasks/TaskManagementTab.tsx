@@ -474,6 +474,45 @@ export function TaskManagementTab() {
               </Button>
             </div>
 
+          {activeTab === 'weekly' && (() => {
+            // Build week days for current selectedDate's week
+            const dow = selectedDate.getDay();
+            const diffToMonday = dow === 0 ? -6 : 1 - dow;
+            const monday = new Date(selectedDate);
+            monday.setDate(monday.getDate() + diffToMonday);
+            const weekDays = Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(monday);
+              d.setDate(monday.getDate() + i);
+              return d;
+            });
+            const DAY_LABELS = ['Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'];
+            return (
+              <div className="flex gap-1.5 mb-4 flex-wrap">
+                {weekDays.map((d) => {
+                  const isSelected = formatDateLocal(d) === formatDateLocal(selectedDate);
+                  const isToday = formatDateLocal(d) === formatDateLocal(new Date());
+                  return (
+                    <button
+                      key={d.toISOString()}
+                      onClick={() => setSelectedDate(new Date(d))}
+                      className={cn(
+                        "flex flex-col items-center px-3 py-2 rounded-xl border text-xs font-medium transition-all min-w-[44px]",
+                        isSelected
+                          ? "bg-amber-500 border-amber-500 text-white shadow"
+                          : isToday
+                          ? "border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-900/20"
+                          : "border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400 hover:border-amber-300 bg-white dark:bg-slate-800"
+                      )}
+                    >
+                      <span>{DAY_LABELS[d.getDay()]}</span>
+                      <span className="text-[10px] opacity-70">{d.getDate()}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           <Card className="mb-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">

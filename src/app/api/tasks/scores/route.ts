@@ -130,10 +130,11 @@ export async function GET(request: NextRequest) {
             (staffList || []).map(async (staff) => {
               const { data: tasks } = await supabase
                 .from('daily_tasks')
-                .select('is_completed, points_earned, template:task_templates(points, indicator_type, weightage)')
+                .select('is_completed, points_earned, template:task_templates!inner(points, indicator_type, weightage, category)')
                 .eq('staff_id', staff.id)
                 .gte('task_date', startDate)
-                .lte('task_date', endDate);
+                .lte('task_date', endDate)
+                .eq('task_templates.category', 'daily');
 
               const scores = calculateWeightedScore(tasks || []);
 
@@ -157,10 +158,11 @@ export async function GET(request: NextRequest) {
 
       const { data: tasks } = await supabase
         .from('daily_tasks')
-        .select('task_date, is_completed, points_earned, template:task_templates(points, indicator_type, weightage)')
+        .select('task_date, is_completed, points_earned, template:task_templates!inner(points, indicator_type, weightage, category)')
         .eq('staff_id', staffId)
         .gte('task_date', startDate)
-        .lte('task_date', endDate);
+        .lte('task_date', endDate)
+        .eq('task_templates.category', 'daily');
 
       const scores = calculateWeightedScore(tasks || []);
 
@@ -249,10 +251,11 @@ export async function GET(request: NextRequest) {
         (staffList || []).map(async (staff) => {
           const { data: tasks } = await supabase
             .from('daily_tasks')
-            .select('is_completed, points_earned, template:task_templates(points, indicator_type, weightage)')
+            .select('is_completed, points_earned, template:task_templates!inner(points, indicator_type, weightage, category)')
             .eq('staff_id', staff.id)
             .gte('task_date', startDateStr)
-            .lte('task_date', endDateStr);
+            .lte('task_date', endDateStr)
+            .eq('task_templates.category', 'daily');
 
           const scores = calculateWeightedScore(tasks || []);
 
@@ -282,10 +285,11 @@ export async function GET(request: NextRequest) {
 
     const { data: tasks } = await supabase
       .from('daily_tasks')
-      .select('is_completed, points_earned, template:task_templates(points, indicator_type, weightage)')
+      .select('is_completed, points_earned, template:task_templates!inner(points, indicator_type, weightage, category)')
       .eq('staff_id', staffId)
       .gte('task_date', startDateStr)
-      .lte('task_date', endDateStr);
+      .lte('task_date', endDateStr)
+      .eq('task_templates.category', 'daily');
 
     const scores = calculateWeightedScore(tasks || []);
 

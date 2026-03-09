@@ -46,7 +46,7 @@ const MONTHS = [
   "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
 ];
 
-const LEAD_FROM_OPTIONS = ["ADS", "PS", "REFERRAL", "WEBSITE", "WHATSAPP", "WALK-IN", "HAIKAL", "LAIN-LAIN"];
+const LEAD_FROM_OPTIONS = ["ADS", "ADS FB", "ADS TIKTOK", "ADS TIKTOK LIVE", "PS", "REFERRAL", "WEBSITE", "WHATSAPP", "WALK-IN", "HAIKAL", "LAIN-LAIN"];
 const FOLLOW_UP_STATUS = ["Pending", "Fu 1", "Fu 2", "Fu 3", "Fu 4", "Fu 5", "Closed", "Not Interested"];
 
 function getDefaultDateRange() {
@@ -590,7 +590,15 @@ const handleBulkDelete = async () => {
   const sortedReports = sortReports(filteredReports);
   const totalLeads = filteredReports.length;
   const closedLeads = filteredReports.filter(r => r.follow_up_status === "Closed").length;
-  const pendingFollowUp = filteredReports.filter(r => r.follow_up_status?.startsWith("Fu")).length;
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  const pendingFollowUp = filteredReports.filter(r => {
+    // Kira sebagai pending jika: follow_up kosong/null/Pending DAN date_lead lebih dari 3 hari
+    // Fu1, Fu2, Fu3, Fu4, Fu5, Closed, Not Interested = tidak kira pending
+    const hasNoFollowUp = !r.follow_up_status || r.follow_up_status === "" || r.follow_up_status === "Pending";
+    const isOlderThan3Days = r.date_lead ? new Date(r.date_lead) <= threeDaysAgo : true;
+    return hasNoFollowUp && isOlderThan3Days;
+  }).length;
   const duplicateCount = reports.filter(r => r.is_duplicate).length;
   const isAllSelected = filteredReports.length > 0 && selectedIds.size === filteredReports.length;
   const isSomeSelected = selectedIds.size > 0 && selectedIds.size < filteredReports.length;

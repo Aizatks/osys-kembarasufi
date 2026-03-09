@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, category, target_role, points, is_mandatory, sort_order, indicator_type, weightage, attachment_requirement } = body;
+    const { title, description, category, target_role, points, is_mandatory, sort_order, indicator_type, weightage, attachment_requirement, frequency_days } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'Tajuk diperlukan' }, { status: 400 });
@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
         indicator_type: indicator_type || 'KPI',
         weightage: weightage || 1,
         attachment_requirement: attachment_requirement || 'none',
+        frequency_days: frequency_days || null,
         created_by: payload.userId,
       })
       .select()
@@ -121,7 +122,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, category, target_role, points, is_mandatory, sort_order, is_active, indicator_type, weightage, attachment_requirement } = body;
+    const { id, title, description, category, target_role, points, is_mandatory, sort_order, is_active, indicator_type, weightage, attachment_requirement, frequency_days } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
@@ -142,6 +143,7 @@ export async function PUT(request: NextRequest) {
     if (indicator_type !== undefined) updateData.indicator_type = indicator_type;
     if (weightage !== undefined) updateData.weightage = weightage;
     if (attachment_requirement !== undefined) updateData.attachment_requirement = attachment_requirement;
+    if (frequency_days !== undefined) updateData.frequency_days = frequency_days;
 
     const { data, error } = await supabase
       .from('task_templates')

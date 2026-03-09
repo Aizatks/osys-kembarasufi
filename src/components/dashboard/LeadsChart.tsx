@@ -14,6 +14,9 @@ interface LeadsChartProps {
 
 const SOURCE_COLORS: Record<string, string> = {
   'ADS': '#3b82f6',
+  'ADS FB': '#1877f2',
+  'ADS TIKTOK': '#010101',
+  'ADS TIKTOK LIVE': '#fe2c55',
   'PS': '#8b5cf6',
   'REFERRAL': '#10b981',
   'WEBSITE': '#f59e0b',

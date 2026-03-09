@@ -20,6 +20,7 @@ import {
   Star,
   Loader2,
   CheckSquare,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,10 +34,11 @@ interface TaskTemplate {
   is_mandatory: boolean;
   sort_order: number;
   is_active: boolean;
-    indicator_type: 'KPI' | 'KRI';
-    weightage: number;
-    attachment_requirement: 'none' | 'optional' | 'mandatory';
-  }
+  indicator_type: 'KPI' | 'KRI';
+  weightage: number;
+  attachment_requirement: 'none' | 'optional' | 'mandatory';
+  frequency_days: number[] | null; // 0=Ahad,1=Isnin,2=Selasa,3=Rabu,4=Khamis,5=Jumaat,6=Sabtu
+}
   
   const CATEGORIES = [
   { value: "daily", label: "Harian" },
@@ -44,7 +46,17 @@ interface TaskTemplate {
   { value: "monthly", label: "Bulanan" },
 ];
 
-const ROLES = ["Sales", "Ejen", "Marketing", "Admin", "PIC", "Pengurus", "C-Suite"];
+const ROLES = ["Sales", "Ejen", "Marketing", "Admin", "PIC", "Pengurus", "C-Suite", "Media"];
+
+const DAYS = [
+  { value: 1, label: 'Isn' },
+  { value: 2, label: 'Sel' },
+  { value: 3, label: 'Rab' },
+  { value: 4, label: 'Kha' },
+  { value: 5, label: 'Jum' },
+  { value: 6, label: 'Sab' },
+  { value: 0, label: 'Ahd' },
+];
 
 export function TaskTemplateManager() {
   const { isAdmin } = useAuth();
@@ -55,6 +67,11 @@ export function TaskTemplateManager() {
   const [selectedCategory, setSelectedCategory] = useState("daily");
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generateRange, setGenerateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0],
+  });
 
     const [form, setForm] = useState({
       title: "",
@@ -67,6 +84,7 @@ export function TaskTemplateManager() {
       indicator_type: "KPI" as "KPI" | "KRI",
       weightage: 1,
       attachment_requirement: 'none' as 'none' | 'optional' | 'mandatory',
+      frequency_days: [] as number[],
     });
 
   useEffect(() => {
@@ -195,6 +213,7 @@ export function TaskTemplateManager() {
         indicator_type: template.indicator_type || "KPI",
         weightage: template.weightage || 1,
         attachment_requirement: template.attachment_requirement || 'none',
+        frequency_days: template.frequency_days || [],
       });
       setDialogOpen(true);
     };
@@ -212,8 +231,9 @@ export function TaskTemplateManager() {
         indicator_type: "KPI" as "KPI" | "KRI",
         weightage: 1,
         attachment_requirement: 'none' as 'none' | 'optional' | 'mandatory',
+        frequency_days: [] as number[],
       });
-    };
+  };
   
     const toggleRole = (role: string) => {
       setForm((prev) => ({
@@ -223,7 +243,38 @@ export function TaskTemplateManager() {
           : [...prev.target_role, role],
       }));
     };
-  
+
+    const toggleDay = (day: number) => {
+      setForm((prev) => ({
+        ...prev,
+        frequency_days: prev.frequency_days.includes(day)
+          ? prev.frequency_days.filter((d) => d !== day)
+          : [...prev.frequency_days, day],
+      }));
+    };
+
+    const handleGenerate = async () => {
+      setGenerating(true);
+      try {
+        const token = localStorage.getItem("auth_token");
+        const res = await fetch('/api/tasks/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ start_date: generateRange.start, end_date: generateRange.end, category: selectedCategory }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast.success(data.message || 'Task berjaya digenerate');
+        } else {
+          toast.error(data.error || 'Gagal generate task');
+        }
+      } catch {
+        toast.error('Gagal generate task');
+      } finally {
+        setGenerating(false);
+      }
+    };
+
     if (!isAdmin) {
       return (
         <div className="flex items-center justify-center py-20">
@@ -388,6 +439,35 @@ export function TaskTemplateManager() {
                   ))}
                 </div>
               </div>
+
+              {form.category === 'weekly' && (
+                <div>
+                  <Label>Hari dalam Seminggu</Label>
+                  <p className="text-xs text-gray-500 mb-2">Pilih hari task ini perlu dibuat. Kosongkan = sekali seminggu sahaja.</p>
+                  <div className="flex gap-1.5">
+                    {DAYS.map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleDay(day.value)}
+                        className={cn(
+                          "w-9 h-9 rounded-lg text-xs font-semibold border transition-all",
+                          form.frequency_days.includes(day.value)
+                            ? "bg-amber-500 border-amber-500 text-white"
+                            : "bg-gray-100 border-gray-200 text-gray-600 hover:border-amber-300"
+                        )}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                  {form.frequency_days.length > 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Task akan dijana {form.frequency_days.length}x seminggu
+                    </p>
+                  )}
+                </div>
+              )}
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="mandatory">Wajib</Label>
@@ -459,6 +539,47 @@ export function TaskTemplateManager() {
         </div>
       </div>
 
+      <Card className="border border-amber-200 bg-amber-50/40 dark:bg-amber-900/10">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <RefreshCw className="w-4 h-4 text-amber-500" />
+              Generate Task untuk Semua Staff
+            </CardTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 text-sm">
+                <span className="text-gray-500 text-xs">Dari</span>
+                <input
+                  type="date"
+                  value={generateRange.start}
+                  onChange={e => setGenerateRange(p => ({ ...p, start: e.target.value }))}
+                  className="border rounded px-2 py-1 text-xs dark:bg-slate-800 dark:border-slate-600"
+                />
+                <span className="text-gray-500 text-xs">Hingga</span>
+                <input
+                  type="date"
+                  value={generateRange.end}
+                  onChange={e => setGenerateRange(p => ({ ...p, end: e.target.value }))}
+                  className="border rounded px-2 py-1 text-xs dark:bg-slate-800 dark:border-slate-600"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={handleGenerate}
+                disabled={generating}
+                className="bg-amber-500 hover:bg-amber-600 text-xs"
+              >
+                {generating ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+                Generate
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            Generate task untuk kategori <strong>{CATEGORIES.find(c => c.value === selectedCategory)?.label}</strong> bagi semua staff dalam date range yang dipilih. Guna ini untuk backfill task lama atau pastikan task seragam.
+          </p>
+        </CardHeader>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -518,13 +639,22 @@ export function TaskTemplateManager() {
                       <p className="text-sm text-gray-500 mt-0.5">{template.description}</p>
                     )}
                     {template.target_role && template.target_role.length > 0 && (
-                      <div className="flex gap-1 mt-1">
+                      <div className="flex gap-1 mt-1 flex-wrap">
                         {template.target_role.map((r) => (
                           <span
                             key={r}
                             className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-600"
                           >
                             {r}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {template.category === 'weekly' && template.frequency_days && template.frequency_days.length > 0 && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {DAYS.filter(d => template.frequency_days!.includes(d.value)).map((d) => (
+                          <span key={d.value} className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">
+                            {d.label}
                           </span>
                         ))}
                       </div>

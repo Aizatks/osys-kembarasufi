@@ -11,6 +11,7 @@ interface TaskTemplate {
   points: number;
   is_mandatory: boolean;
   sort_order: number;
+  frequency_days: number[] | null; // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
 }
 
 function getDateRange(category: string, date: Date): { start: Date; end: Date } {
@@ -101,20 +102,55 @@ export async function GET(request: NextRequest) {
       !t.target_role || t.target_role.length === 0 || t.target_role.includes(staffCategory)
     );
 
-    const existingTemplateIds = new Set(
-      (existingTasks || [])
-        .filter(t => t.template_id)
-        .map(t => t.template_id)
-    );
+    // For weekly templates with frequency_days, generate one task per matching day in the week
+    // For daily/monthly or weekly without frequency_days, generate once per period
+    const tasksToCreate: { staff_id: string; task_date: string; template_id: string; points_earned: number }[] = [];
 
-    const tasksToCreate = filteredTemplates
-      .filter((t: TaskTemplate) => !existingTemplateIds.has(t.id))
-      .map((t: TaskTemplate) => ({
-        staff_id: staffId,
-        task_date: formatDateLocal(targetDate),
-        template_id: t.id,
-        points_earned: 0,
-      }));
+    if (category === 'weekly') {
+      // Build a set of existing (template_id, task_date) pairs
+      const existingPairs = new Set(
+        (existingTasks || [])
+          .filter(t => t.template_id)
+          .map(t => `${t.template_id}__${t.task_date}`)
+      );
+
+      for (const t of filteredTemplates) {
+        if (t.frequency_days && t.frequency_days.length > 0) {
+          // Generate one task per matching day within the week range
+          const current = new Date(periodStart);
+          while (current <= periodEnd) {
+            const dow = current.getDay(); // 0=Sun..6=Sat
+            if (t.frequency_days.includes(dow)) {
+              const dateStr = formatDateLocal(current);
+              const pairKey = `${t.id}__${dateStr}`;
+              if (!existingPairs.has(pairKey)) {
+                tasksToCreate.push({ staff_id: staffId, task_date: dateStr, template_id: t.id, points_earned: 0 });
+              }
+            }
+            current.setDate(current.getDate() + 1);
+          }
+        } else {
+          // No frequency_days — one task for the whole week (stored on start of week)
+          const existingTemplateIds = new Set(
+            (existingTasks || []).filter(t2 => t2.template_id).map(t2 => t2.template_id)
+          );
+          if (!existingTemplateIds.has(t.id)) {
+            tasksToCreate.push({ staff_id: staffId, task_date: formatDateLocal(periodStart), template_id: t.id, points_earned: 0 });
+          }
+        }
+      }
+    } else {
+      const existingTemplateIds = new Set(
+        (existingTasks || [])
+          .filter(t => t.template_id)
+          .map(t => t.template_id)
+      );
+      for (const t of filteredTemplates) {
+        if (!existingTemplateIds.has(t.id)) {
+          tasksToCreate.push({ staff_id: staffId, task_date: formatDateLocal(targetDate), template_id: t.id, points_earned: 0 });
+        }
+      }
+    }
 
     if (tasksToCreate.length > 0) {
       const { error: insertError } = await supabase

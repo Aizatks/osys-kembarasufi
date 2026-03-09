@@ -21,8 +21,37 @@ import {
   Medal,
   ChevronLeft,
   ChevronRight,
+  X,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  ChevronDown,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface TaskBreakdown {
+  template_id: string;
+  title: string;
+  indicator_type: string;
+  total: number;
+  completed: number;
+  missed: number;
+  completion_rate: number;
+  missed_dates: string[];
+}
+
+interface StaffBreakdown {
+  staff: { id: string; name: string; category: string };
+  breakdown: TaskBreakdown[];
+  insights: {
+    never_done: string[];
+    rarely_done: { title: string; rate: number }[];
+    well_done: { title: string; rate: number }[];
+  };
+  summary: { total: number; completed: number; missed: number; completion_rate: number };
+  period: { start: string; end: string };
+}
 
 interface StaffScore {
   staff_id: string;
@@ -96,12 +125,17 @@ export function TaskScoreDashboard() {
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [yearlyReport, setYearlyReport] = useState<YearlyReport | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [breakdown, setBreakdown] = useState<StaffBreakdown | null>(null);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
   const ROLES = ["Sales", "Ejen", "Marketing", "Media", "Admin", "PIC"];
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin === true) {
       fetchScores();
+    } else if (isAdmin === false) {
+      setLoading(false);
     }
   }, [isAdmin, period, selectedYear, selectedMonth, dateRangeStart, dateRangeEnd, selectedRole]);
 
@@ -131,10 +165,14 @@ export function TaskScoreDashboard() {
       if (response.ok) {
         const data = await response.json();
         setScores(data.scores || []);
+      } else {
+        console.error("Scores API error:", response.status);
       }
-    } catch (error) {
-      console.error("Failed to fetch scores:", error);
-      toast.error("Gagal memuat skor");
+    } catch (error: unknown) {
+      // Ignore AbortError or initial mount errors
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error("Failed to fetch scores:", error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -157,6 +195,38 @@ export function TaskScoreDashboard() {
       }
     } catch (error) {
       console.error("Failed to fetch yearly report:", error);
+    }
+  };
+
+  const fetchBreakdown = async (staffId: string) => {
+    setBreakdownLoading(true);
+    setBreakdown(null);
+    setExpandedTask(null);
+    try {
+      const token = localStorage.getItem("auth_token");
+      let start = dateRangeStart;
+      let end = dateRangeEnd;
+      if (period === "monthly") {
+        const paddedMonth = selectedMonth.toString().padStart(2, "0");
+        start = `${selectedYear}-${paddedMonth}-01`;
+        const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+        end = `${selectedYear}-${paddedMonth}-${lastDay}`;
+      } else if (period === "yearly") {
+        start = `${selectedYear}-01-01`;
+        end = `${selectedYear}-12-31`;
+      }
+      const res = await fetch(
+        `/api/tasks/breakdown?staff_id=${staffId}&start_date=${start}&end_date=${end}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setBreakdown(data);
+      }
+    } catch (e) {
+      console.error("Breakdown fetch error:", e);
+    } finally {
+      setBreakdownLoading(false);
     }
   };
 
@@ -430,15 +500,15 @@ export function TaskScoreDashboard() {
                               </td>
                             )}
                             <td className="py-3">
-                              {period === "yearly" && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => fetchYearlyReport(score.staff_id)}
-                                >
-                                  Details
-                                </Button>
-                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => fetchBreakdown(score.staff_id)}
+                                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                              >
+                                <Eye className="w-3.5 h-3.5 mr-1" />
+                                Lihat
+                              </Button>
                             </td>
                           </tr>
                         );
@@ -557,6 +627,185 @@ export function TaskScoreDashboard() {
                   </div>
                 </div>
               </CardContent>
+            </Card>
+          )}
+
+          {/* Individual Breakdown Panel */}
+          {(breakdown || breakdownLoading) && (
+            <Card className="border-2 border-amber-200 dark:border-amber-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-amber-500" />
+                    {breakdownLoading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Memuatkan...
+                      </span>
+                    ) : (
+                      <span>
+                        Prestasi Individu — <span className="text-amber-600">{breakdown?.staff?.name}</span>
+                      </span>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setBreakdown(null)}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              {!breakdownLoading && breakdown && (
+                <CardContent className="space-y-5">
+                  {/* Summary bar */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-center">
+                      <p className="text-xs text-gray-500 mb-1">Jumlah Task</p>
+                      <p className="text-2xl font-bold text-gray-800 dark:text-white">{breakdown.summary.total}</p>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 text-center">
+                      <p className="text-xs text-gray-500 mb-1">Diselesaikan</p>
+                      <p className="text-2xl font-bold text-emerald-600">{breakdown.summary.completed}</p>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-center">
+                      <p className="text-xs text-gray-500 mb-1">Tidak Dibuat</p>
+                      <p className="text-2xl font-bold text-red-500">{breakdown.summary.missed}</p>
+                    </div>
+                  </div>
+
+                  {/* Insights */}
+                  {breakdown.insights.never_done.length > 0 && (
+                    <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <XCircle className="w-4 h-4 text-red-500" />
+                        <span className="font-semibold text-red-700 dark:text-red-400 text-sm">
+                          Tidak Pernah Dibuat ({breakdown.insights.never_done.length} task)
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {breakdown.insights.never_done.map((title) => (
+                          <span key={title} className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full">
+                            {title}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {breakdown.insights.rarely_done.length > 0 && (
+                    <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertCircle className="w-4 h-4 text-orange-500" />
+                        <span className="font-semibold text-orange-700 dark:text-orange-400 text-sm">
+                          Jarang Dibuat — bawah 50% ({breakdown.insights.rarely_done.length} task)
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {breakdown.insights.rarely_done.map((item) => (
+                          <span key={item.title} className="text-xs px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">
+                            {item.title} ({item.rate}%)
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {breakdown.insights.well_done.length > 0 && (
+                    <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-400 text-sm">
+                          Konsisten Dibuat — 80% ke atas ({breakdown.insights.well_done.length} task)
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {breakdown.insights.well_done.map((item) => (
+                          <span key={item.title} className="text-xs px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full">
+                            {item.title} ({item.rate}%)
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Full breakdown table */}
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3">Pecahan Setiap Task</h4>
+                    <div className="space-y-2">
+                      {breakdown.breakdown.map((item) => {
+                        const isExpanded = expandedTask === item.template_id;
+                        return (
+                          <div key={item.template_id} className="rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 overflow-hidden">
+                            <div className="flex items-center gap-3 p-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.title}</span>
+                                  <span className={cn(
+                                    "text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0",
+                                    item.indicator_type === 'KRI'
+                                      ? "bg-purple-100 text-purple-700"
+                                      : "bg-blue-100 text-blue-700"
+                                  )}>
+                                    {item.indicator_type}
+                                  </span>
+                                </div>
+                                {/* Progress bar */}
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                                    <div
+                                      className={cn(
+                                        "h-full rounded-full transition-all",
+                                        item.completion_rate >= 80 ? "bg-emerald-500" :
+                                        item.completion_rate >= 50 ? "bg-amber-500" : "bg-red-500"
+                                      )}
+                                      style={{ width: `${item.completion_rate}%` }}
+                                    />
+                                  </div>
+                                  <span className={cn(
+                                    "text-xs font-bold w-10 text-right shrink-0",
+                                    item.completion_rate >= 80 ? "text-emerald-600" :
+                                    item.completion_rate >= 50 ? "text-amber-600" : "text-red-500"
+                                  )}>
+                                    {item.completion_rate}%
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {item.completed}/{item.total}
+                                </div>
+                                {item.missed > 0 && (
+                                  <button
+                                    onClick={() => setExpandedTask(isExpanded ? null : item.template_id)}
+                                    className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 mt-0.5"
+                                  >
+                                    {item.missed} tertinggal
+                                    <ChevronDown className={cn("w-3 h-3 transition-transform", isExpanded && "rotate-180")} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {/* Expanded missed dates */}
+                            {isExpanded && item.missed_dates.length > 0 && (
+                              <div className="px-3 pb-3 border-t border-gray-100 dark:border-slate-700 pt-2">
+                                <p className="text-xs text-gray-500 mb-2">Tarikh tidak dibuat:</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {item.missed_dates.map((date) => {
+                                    const d = new Date(date + 'T00:00:00');
+                                    const dayNames = ['Ahd','Isn','Sel','Rab','Kha','Jum','Sab'];
+                                    return (
+                                      <span key={date} className="text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full">
+                                        {dayNames[d.getDay()]} {d.getDate()}/{d.getMonth()+1}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              )}
             </Card>
           )}
         </>

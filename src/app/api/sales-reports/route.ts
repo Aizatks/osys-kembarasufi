@@ -160,15 +160,16 @@ export async function POST(request: NextRequest) {
         status_bayaran: body.status_bayaran,
         status_peserta: body.status_peserta,
         nama_wakil_peserta: body.nama_wakil_peserta,
+        lead_from: body.lead_from || null,
         remark: body.remark,
       })
       .select()
       .single();
-    
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
+
     return NextResponse.json({ data });
   } catch (error) {
     console.error("Error creating sales report:", error);
@@ -222,6 +223,7 @@ export async function PUT(request: NextRequest) {
         status_bayaran: body.status_bayaran,
         status_peserta: body.status_peserta,
         nama_wakil_peserta: body.nama_wakil_peserta,
+        lead_from: body.lead_from || null,
         remark: body.remark,
         updated_at: new Date().toISOString(),
       })
