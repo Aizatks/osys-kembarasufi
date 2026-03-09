@@ -225,15 +225,35 @@ export function QuotationCalculatorV2({ data }: Props) {
 
     useEffect(() => {
       if (activePackage?.dateIdx && activePackage.dateIdx !== "manual" && selectedDate) {
+        const updates: Partial<PackageSelection> = {};
+
+        // Handle surcharge
         if (selectedDate.sur > 0) {
-          updatePackage(activePackageIdx, { surchargeOverride: selectedDate.sur });
+          updates.surchargeOverride = selectedDate.sur;
         } else if (selectedPkg && selectedPkg.costs.surcharge_base === 0) {
-          updatePackage(activePackageIdx, { surchargeOverride: 0 });
+          updates.surchargeOverride = 0;
         } else {
-          updatePackage(activePackageIdx, { surchargeOverride: "" });
+          updates.surchargeOverride = "";
         }
+
+        // Handle peak season base prices (e.g. Korea December/SEJUK)
+        if (selectedDate.peakSeasonPrices) {
+          const pp = selectedDate.peakSeasonPrices;
+          updates.manualPrices = {
+            enabled: true,
+            adult: pp.adult ?? 0,
+            cwb: pp.cwb ?? 0,
+            cwob: pp.cwob ?? 0,
+            infant: 0,
+          };
+        } else {
+          // Reset to default (non-peak) prices when switching to a non-peak date
+          updates.manualPrices = { enabled: false, adult: 0, cwb: 0, cwob: 0, infant: 0 };
+        }
+
+        updatePackage(activePackageIdx, updates);
       }
-    }, [activePackage?.dateIdx, selectedDate?.sur, selectedPkg]);
+    }, [activePackage?.dateIdx, selectedDate?.sur, JSON.stringify(selectedDate?.peakSeasonPrices), selectedPkg?.name]);
 
 
   const filteredPkgKeys = useMemo(() => {
@@ -1198,13 +1218,26 @@ export function QuotationCalculatorV2({ data }: Props) {
                 </div>
             </div>
 
-            {selectedPkg && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1 break-words">
-                  <p className="flex flex-wrap gap-x-2"><span><strong>Harga Dewasa:</strong> RM{selectedPkg.prices.adult.toLocaleString()}</span> <span><strong>CWB:</strong> RM{selectedPkg.prices.cwb.toLocaleString()}</span> <span><strong>CWOB:</strong> RM{selectedPkg.prices.cwob.toLocaleString()}</span></p>
-                  <p className="flex flex-wrap gap-x-2"><span><strong>Tipping:</strong> RM{selectedPkg.costs.tip}</span> <span><strong>Surcharge:</strong> RM{selectedPkg.costs.surcharge_base}</span> <span><strong>Visa:</strong> RM{selectedPkg.costs.visa}</span></p>
-                  {selectedPkg.pic && <p className="text-muted-foreground italic">Info PIC: {selectedPkg.pic}</p>}
-                </div>
-              )}
+            {selectedPkg && (() => {
+                const peakPrices = selectedDate?.peakSeasonPrices;
+                const displayAdult = peakPrices?.adult ?? selectedPkg.prices.adult;
+                const displayCwb = peakPrices?.cwb ?? selectedPkg.prices.cwb;
+                const displayCwob = peakPrices?.cwob ?? selectedPkg.prices.cwob;
+                return (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1 break-words">
+                    <p className="flex flex-wrap gap-x-2">
+                      <span><strong>Harga Dewasa:</strong> RM{displayAdult.toLocaleString()}</span>
+                      <span><strong>CWB:</strong> RM{displayCwb.toLocaleString()}</span>
+                      <span><strong>CWOB:</strong> RM{displayCwob.toLocaleString()}</span>
+                    </p>
+                    {peakPrices && (
+                      <p className="text-amber-700 font-semibold">⚠ Harga Musim Puncak (December)</p>
+                    )}
+                    <p className="flex flex-wrap gap-x-2"><span><strong>Tipping:</strong> RM{selectedPkg.costs.tip}</span> <span><strong>Surcharge:</strong> RM{selectedPkg.costs.surcharge_base}</span> <span><strong>Visa:</strong> RM{selectedPkg.costs.visa}</span></p>
+                    {selectedPkg.pic && <p className="text-muted-foreground italic">Info PIC: {selectedPkg.pic}</p>}
+                  </div>
+                );
+              })()}
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -1605,7 +1638,11 @@ export function QuotationCalculatorV2({ data }: Props) {
                     
                     {activePackage?.manualPrices.enabled && (
                       <div className="bg-amber-50 rounded-lg p-3 space-y-2 border border-amber-200">
-                        <p className="text-xs text-amber-700">Masukkan harga manual untuk tarikh/promosi khas:</p>
+                        <p className="text-xs text-amber-700">
+                          {selectedDate?.peakSeasonPrices
+                            ? "Harga musim puncak (December) ditetapkan secara automatik. Boleh ubah jika perlu:"
+                            : "Masukkan harga manual untuk tarikh/promosi khas:"}
+                        </p>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div className="space-y-1">
                             <Label className="text-[10px] uppercase text-muted-foreground">Dewasa (RM)</Label>

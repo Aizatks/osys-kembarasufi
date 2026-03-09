@@ -4,6 +4,7 @@ export interface TripDate {
   sur: number;
   surLabel: string;
   availability: number | null;
+  peakSeasonPrices?: { adult?: number; cwb?: number; cwob?: number };
 }
 
 export interface InsuranceRates {
@@ -71,74 +72,90 @@ function parseDate(dateVal: string | number | null, formatted?: string): string 
   return '';
 }
 
-export type SheetConfig = { 
-  gid: string; 
-  dateCol: number; 
-  surCol: number; 
-  availCol: number; 
-  rowStart?: number; 
+export type SheetConfig = {
+  gid: string;
+  dateCol: number;
+  surCol: number;
+  availCol: number;
+  rowStart?: number;
   rowEnd?: number;
   tipFromHeader?: number;
   seasonCol?: number;
   seasonSurcharge?: number;
+  // For packages with seasonal base price changes (e.g. Korea December)
+  peakSeasonKeyword?: string;
+  peakSeasonPrices?: { adult?: number; cwb?: number; cwob?: number };
+  // Only apply peakSeasonPrices when surcharge is at least this amount (e.g. Egypt/SPM - SEJUK applies year-round but Dec has higher surcharge)
+  peakMinSurcharge?: number;
 };
 
 export const PACKAGE_SHEET_MAP: Record<string, SheetConfig> = {
-    // Europe packages - VERIFIED FEB 2026
-    'WEST EUROPE': { gid: '1685996596', dateCol: 3, surCol: 1, availCol: 5 },
-    'KEMBARA EROPAH': { gid: '1650367882', dateCol: 3, surCol: 1, availCol: 4 },
-    'EROPAH 5 NEGARA': { gid: '1650367882', dateCol: 3, surCol: 1, availCol: 4 },
-    'SWITZERLAND': { gid: '0', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, seasonSurcharge: 280 },
-    'UNITED KINGDOM': { gid: '1415831953', dateCol: 3, surCol: 1, availCol: 5 },
-    'UK': { gid: '1415831953', dateCol: 3, surCol: 1, availCol: 5 },
-    'CEE': { gid: '44458730', dateCol: 3, surCol: 1, availCol: 5 },
-    'CENTRAL EASTERN': { gid: '44458730', dateCol: 3, surCol: 1, availCol: 5 },
-    'BALKAN': { gid: '337539407', dateCol: 3, surCol: 1, availCol: 5 },
-    
-    // Turkey & Caucasus - VERIFIED
-    'TURKEY': { gid: '46277800', dateCol: 3, surCol: 1, availCol: 5 },
-    'TURKIYE': { gid: '46277800', dateCol: 3, surCol: 1, availCol: 5 },
-    'TURKI': { gid: '46277800', dateCol: 3, surCol: 1, availCol: 5 },
+    // Europe packages
+    // Dec prices: West Europe 9299/9099/8899, peak when sur>=370
+    'WEST EUROPE': { gid: '1685996596', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'WINTER', peakSeasonPrices: { adult: 9299, cwb: 9099, cwob: 8899 } },
+    // Dec prices: Kembara Eropah 9299/9099/8899
+    'KEMBARA EROPAH': { gid: '1650367882', dateCol: 3, surCol: 1, availCol: 4, seasonCol: 6, peakSeasonKeyword: 'WINTER', peakSeasonPrices: { adult: 9299, cwb: 9099, cwob: 8899 } },
+    'EROPAH 5 NEGARA': { gid: '1650367882', dateCol: 3, surCol: 1, availCol: 4, seasonCol: 6, peakSeasonKeyword: 'WINTER', peakSeasonPrices: { adult: 9299, cwb: 9099, cwob: 8899 } },
+    // Switzerland - Dec 8899/8699/8499
+    'SWITZERLAND': { gid: '0', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'WINTER', peakSeasonPrices: { adult: 8899, cwb: 8699, cwob: 8499 } },
+    // UK - Dec 12630/12430/12230
+    'UNITED KINGDOM': { gid: '1415831953', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'WINTER', peakSeasonPrices: { adult: 12630, cwb: 12430, cwob: 12230 } },
+    'UK': { gid: '1415831953', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'WINTER', peakSeasonPrices: { adult: 12630, cwb: 12430, cwob: 12230 } },
+    // CEE - Dec 8899/8699/8499, peakMinSurcharge to avoid Jan SEJUK dates getting peak prices
+    'CEE': { gid: '44458730', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 8899, cwb: 8699, cwob: 8499 }, peakMinSurcharge: 370 },
+    'CENTRAL EASTERN': { gid: '44458730', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 8899, cwb: 8699, cwob: 8499 }, peakMinSurcharge: 370 },
+    // Balkan - Dec 8899/8699/8499
+    'BALKAN': { gid: '337539407', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 8899, cwb: 8699, cwob: 8499 }, peakMinSurcharge: 340 },
+
+    // Turkey & Caucasus
+    // Turkey Dec: 5299/5099/4899 (WINTER SONATA in col[5])
+    'TURKEY': { gid: '46277800', dateCol: 2, surCol: 1, availCol: 10, seasonCol: 5, peakSeasonKeyword: 'WINTER SONATA', peakSeasonPrices: { adult: 5299, cwb: 5099, cwob: 4899 } },
+    'TURKIYE': { gid: '46277800', dateCol: 2, surCol: 1, availCol: 10, seasonCol: 5, peakSeasonKeyword: 'WINTER SONATA', peakSeasonPrices: { adult: 5299, cwb: 5099, cwob: 4899 } },
+    'TURKI': { gid: '46277800', dateCol: 2, surCol: 1, availCol: 10, seasonCol: 5, peakSeasonKeyword: 'WINTER SONATA', peakSeasonPrices: { adult: 5299, cwb: 5099, cwob: 4899 } },
+    // Caucasus Dec: 8899/8699/8499 - no departure sheet, handled via PRICE_OVERRIDES
     'CAUCASUS': { gid: '327375225', dateCol: 3, surCol: 1, availCol: 5 },
     'KEMBARA CAUCASUS': { gid: '327375225', dateCol: 3, surCol: 1, availCol: 5 },
-    
-    // Spain/Portugal/Morocco - VERIFIED
-    'SPM': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5 },
-    'SPAIN': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5 },
-    'PORTUGAL': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5 },
-    'MOROCCO': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5 },
-    
-    // Jordan/Palestine/Aqsa - VERIFIED
-    'JORDAN': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5 },
-    'PALESTIN': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5 },
-    'AQSA': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5 },
-    'JORDAN AQSA': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5 },
-    
-    // Egypt packages - VERIFIED
-    'MESIR': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5 },
-    'EGYPT': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5 },
-    'JEJAK RASUL': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5 },
-    'MESIR JEJAK RASUL': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5 },
+
+    // Spain/Portugal/Morocco
+    // SEJUK applies Jan-Feb (regular) AND Dec (higher) - peakMinSurcharge to distinguish
+    'SPM': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 9699, cwb: 9499, cwob: 9299 }, peakMinSurcharge: 340 },
+    'SPAIN': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 9699, cwb: 9499, cwob: 9299 }, peakMinSurcharge: 340 },
+    'PORTUGAL': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 9699, cwb: 9499, cwob: 9299 }, peakMinSurcharge: 340 },
+    'MOROCCO': { gid: '73120252', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 9699, cwb: 9499, cwob: 9299 }, peakMinSurcharge: 340 },
+
+    // Jordan/Palestine/Aqsa - Dec: 8799/8699/8599
+    'JORDAN': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 8799, cwb: 8699, cwob: 8599 }, peakMinSurcharge: 340 },
+    'PALESTIN': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 8799, cwb: 8699, cwob: 8599 }, peakMinSurcharge: 340 },
+    'AQSA': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 8799, cwb: 8699, cwob: 8599 }, peakMinSurcharge: 340 },
+    'JORDAN AQSA': { gid: '724334601', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 8799, cwb: 8699, cwob: 8599 }, peakMinSurcharge: 340 },
+
+    // Egypt packages
+    // SEJUK applies Feb-Mar (regular) AND Dec (higher) - peakMinSurcharge to distinguish
+    'MESIR': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 7299, cwb: 7099, cwob: 6899 }, peakMinSurcharge: 340 },
+    'EGYPT': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 7299, cwb: 7099, cwob: 6899 }, peakMinSurcharge: 340 },
+    'JEJAK RASUL': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 7299, cwb: 7099, cwob: 6899 }, peakMinSurcharge: 340 },
+    'MESIR JEJAK RASUL': { gid: '104028176', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 7299, cwb: 7099, cwob: 6899 }, peakMinSurcharge: 340 },
     'NILE': { gid: '1836266947', dateCol: 3, surCol: -1, availCol: 10 },
     'CRUISE': { gid: '1836266947', dateCol: 3, surCol: -1, availCol: 10 },
     'MESIR CRUISE NILE': { gid: '1836266947', dateCol: 3, surCol: -1, availCol: 10 },
-    
-    // China packages - VERIFIED with NEW GIDs
+
+    // China packages - Beijing/Xian Dec: 4499/4399/4299
     'YUNNAN': { gid: '839996957', dateCol: 3, surCol: 1, availCol: 5 },
-    'BEIJING INNER MONGOLIA': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5 },
-    'INNER MONGOLIA': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5 },
-    'MONGOLIA': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5 },
-    'BIM': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5 },
-    'BEIJING XIAN': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5 },
-    'XIAN': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5 },
+    'BEIJING INNER MONGOLIA': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4499, cwb: 4399, cwob: 4299 } },
+    'INNER MONGOLIA': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4499, cwb: 4399, cwob: 4299 } },
+    'MONGOLIA': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4499, cwb: 4399, cwob: 4299 } },
+    'BIM': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4499, cwb: 4399, cwob: 4299 } },
+    'BEIJING XIAN': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4499, cwb: 4399, cwob: 4299 } },
+    'XIAN': { gid: '1042321717', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4499, cwb: 4399, cwob: 4299 } },
     'CHINA': { gid: '839996957', dateCol: 3, surCol: 1, availCol: 5 },
-    
-    // Japan & Korea - VERIFIED with NEW GIDs
-    'JAPAN': { gid: '2127495849', dateCol: 3, surCol: 1, availCol: 5 },
-    'JEPUN': { gid: '2127495849', dateCol: 3, surCol: 1, availCol: 5 },
-    'KOREA': { gid: '177943333', dateCol: 3, surCol: 1, availCol: 5 },
-    'SEOUL': { gid: '177943333', dateCol: 3, surCol: 1, availCol: 5 },
-    'NAMI': { gid: '177943333', dateCol: 3, surCol: 1, availCol: 5 },
+
+    // Japan - Dec: 7499/7399/7299
+    'JAPAN': { gid: '2127495849', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'Sejuk', peakSeasonPrices: { adult: 7499, cwb: 7399, cwob: 7299 } },
+    'JEPUN': { gid: '2127495849', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'Sejuk', peakSeasonPrices: { adult: 7499, cwb: 7399, cwob: 7299 } },
+    // Korea - Dec: 4399/4299/4199
+    'KOREA': { gid: '177943333', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4399, cwb: 4299, cwob: 4199 } },
+    'SEOUL': { gid: '177943333', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4399, cwb: 4299, cwob: 4199 } },
+    'NAMI': { gid: '177943333', dateCol: 3, surCol: 1, availCol: 5, seasonCol: 6, peakSeasonKeyword: 'SEJUK', peakSeasonPrices: { adult: 4399, cwb: 4299, cwob: 4199 } },
     
     // India/Pakistan - VERIFIED
     'KASHMIR': { gid: '780665131', dateCol: 3, surCol: 1, availCol: 5 },
@@ -384,18 +401,32 @@ export async function fetchPackageDates(sheetId: string, gid: string, config: Sh
         rowSurLabel = surResult.label;
       }
       
-      if (config.seasonCol !== undefined && config.seasonSurcharge && cells[config.seasonCol]) {
+      let rowPeakSeasonPrices: { adult?: number; cwb?: number; cwob?: number } | undefined;
+
+      if (config.seasonCol !== undefined && cells[config.seasonCol]) {
         const seasonVal = String(cells[config.seasonCol]?.v || '').toUpperCase().trim();
-        const peakSeasons = ['WINTER', 'SPRING', 'AUTUMN'];
-        if (peakSeasons.includes(seasonVal)) {
-          rowSurcharge = config.seasonSurcharge;
-          rowSurLabel = `Surcharge RM${config.seasonSurcharge} (${seasonVal})`;
-        } else if (seasonVal === 'SUMMER') {
-          rowSurcharge = 0;
-          rowSurLabel = '';
+
+        // Handle legacy Swiss-style season surcharge
+        if (config.seasonSurcharge) {
+          const peakSeasons = ['WINTER', 'SPRING', 'AUTUMN'];
+          if (peakSeasons.includes(seasonVal)) {
+            rowSurcharge = config.seasonSurcharge;
+            rowSurLabel = `Surcharge RM${config.seasonSurcharge} (${seasonVal})`;
+          } else if (seasonVal === 'SUMMER') {
+            rowSurcharge = 0;
+            rowSurLabel = '';
+          }
+        }
+
+        // Handle packages with seasonal base price changes (e.g. Korea December/SEJUK)
+        if (config.peakSeasonKeyword && config.peakSeasonPrices && seasonVal === config.peakSeasonKeyword.toUpperCase()) {
+          // If peakMinSurcharge set, only apply peak prices when surcharge meets threshold (e.g. Egypt/SPM Dec vs regular SEJUK)
+          if (!config.peakMinSurcharge || rowSurcharge >= config.peakMinSurcharge) {
+            rowPeakSeasonPrices = config.peakSeasonPrices;
+          }
         }
       }
-    
+
       let availability: number | null = null;
       if (config.availCol >= 0 && cells[config.availCol]) {
         const availVal = cells[config.availCol]?.v;
@@ -413,7 +444,7 @@ export async function fetchPackageDates(sheetId: string, gid: string, config: Sh
           }
         }
       }
-      
+
       let status: 'AVAILABLE' | 'LIMITED' | 'CLOSED' = 'AVAILABLE';
       if (availability !== null) {
         if (availability === 0) {
@@ -422,16 +453,34 @@ export async function fetchPackageDates(sheetId: string, gid: string, config: Sh
           status = 'LIMITED';
         }
       }
-      
+
       dates.push({
         txt: dateStr,
         status,
         sur: rowSurcharge,
         surLabel: rowSurLabel,
         availability,
+        peakSeasonPrices: rowPeakSeasonPrices,
       });
     });
-    
+
+    // Sort dates chronologically by first date in the string
+    const monthMap: Record<string, number> = {
+      jan: 0, feb: 1, mac: 2, mar: 2, apr: 3, may: 4, mei: 4, jun: 5, june: 5,
+      jul: 6, july: 6, aug: 7, ogo: 7, sep: 8, okt: 9, oct: 9, nov: 10, dis: 11, dec: 11,
+    };
+    function parseDateForSort(txt: string): number {
+      // Match first occurrence of: day month [year] - extract year from anywhere in string
+      const dayMonMatch = txt.match(/^(\d{1,2})\s+([a-z]+)/i);
+      const yearMatch = txt.match(/(\d{4})/);
+      if (!dayMonMatch || !yearMatch) return 0;
+      const day = parseInt(dayMonMatch[1]);
+      const mon = monthMap[dayMonMatch[2].toLowerCase()] ?? 0;
+      const year = parseInt(yearMatch[1]);
+      return year * 10000 + mon * 100 + day;
+    }
+    dates.sort((a, b) => parseDateForSort(a.txt) - parseDateForSort(b.txt));
+
     return dates;
   } catch (error) {
     console.error(`Error fetching dates for gid ${gid}:`, error);
@@ -563,6 +612,7 @@ export async function fetchSheetData(): Promise<MasterData> {
 
       masterData[pkgKey] = {
           name: pkgName.trim(),
+          duration: '',
           prices: {
             adult: adultPrice,
             cwb: cwbPrice,
@@ -583,43 +633,64 @@ export async function fetchSheetData(): Promise<MasterData> {
         };
       });
 
-      // PRICE OVERRIDES - Manual corrections for specific packages
-      const PRICE_OVERRIDES: Record<string, Partial<{ 
-        cwb: number; cwob: number; tip: number; surcharge: number 
+      // PRICE OVERRIDES - Verified against LAPORAN HARIAN HARGA PAKEJ 2026 spreadsheet (gid=949409090)
+      // These fix CWB/CWOB that main sheet sometimes has wrong. Dec prices handled via peakSeasonPrices.
+      const PRICE_OVERRIDES: Record<string, Partial<{
+        adult: number; cwb: number; cwob: number; tip: number; surcharge: number
       }>> = {
-        'ACEH': { cwb: 1799, cwob: 1699 },
-        'SABANG': { cwb: 1799, cwob: 1699 },
-        'ACEH SABANG': { cwb: 1799, cwob: 1699 },
-        'ACEH + SABANG': { cwb: 1799, cwob: 1699 },
-        'PADANG': { cwb: 1499, cwob: 1399 },
-        'BUKITTINGGI': { cwb: 1499, cwob: 1399 },
-        'BUKIT TINGGI': { cwb: 1499, cwob: 1399 },
-        'PADANG BUKITTINGGI': { cwb: 1499, cwob: 1399 },
-        'PADANG + BUKITTINGGI': { cwb: 1499, cwob: 1399 },
-        'CEE': { cwob: 8599 },
-        'CENTRAL EASTERN': { cwob: 8599 },
-        'VIETNAM HANOI': { surcharge: 220 },
-        'HANOI': { surcharge: 220 },
-        'SAPA': { surcharge: 220 },
-        'HALONG': { surcharge: 220 },
-        'KOREA': { cwb: 4399, cwob: 4199, tip: 250 },
-        'SEOUL': { cwb: 4399, cwob: 4199, tip: 250 },
-        'NAMI': { cwb: 4399, cwob: 4199, tip: 250 },
-        'JAPAN': { cwb: 7299, cwob: 7199 },
-        'JEPUN': { cwb: 7299, cwob: 7199 },
-        'BEIJING INNER MONGOLIA': { cwb: 4499, cwob: 4299 },
-        'INNER MONGOLIA': { cwb: 4499, cwob: 4299 },
-        'MONGOLIA': { cwb: 4499, cwob: 4299 },
-        'BIM': { cwb: 4499, cwob: 4299 },
-        'BEIJING XIAN': { cwb: 4499, cwob: 4299, surcharge: 250 },
-        'XIAN': { cwb: 4499, cwob: 4299, surcharge: 250 },
-        'TAIWAN': { cwb: 3599, cwob: 3499, tip: 100, surcharge: 200 },
-        'PAKISTAN': { cwb: 6199, cwob: 5999 },
+        // Indonesia
+        'ACEH': { cwb: 1799, cwob: 1599 },
+        'SABANG': { cwb: 1799, cwob: 1599 },
+        'ACEH SABANG': { cwb: 1799, cwob: 1599 },
+        'ACEH + SABANG': { cwb: 1799, cwob: 1599 },
+        'PADANG': { cwb: 1499, cwob: 1299 },
+        'BUKITTINGGI': { cwb: 1499, cwob: 1299 },
+        'BUKIT TINGGI': { cwb: 1499, cwob: 1299 },
+        'PADANG BUKITTINGGI': { cwb: 1499, cwob: 1299 },
+        'PADANG + BUKITTINGGI': { cwb: 1499, cwob: 1299 },
+        // Vietnam
+        'VIETNAM HANOI': { cwb: 2899, cwob: 2699 },
+        'HANOI': { cwb: 2899, cwob: 2699 },
+        'SAPA': { cwb: 2899, cwob: 2699 },
+        'HALONG': { cwb: 2899, cwob: 2699 },
+        // Korea - regular season (Dec prices via peakSeasonPrices)
+        'KOREA': { cwb: 3899, cwob: 3699, tip: 200 },
+        'SEOUL': { cwb: 3899, cwob: 3699, tip: 200 },
+        'NAMI': { cwb: 3899, cwob: 3699, tip: 200 },
+        // Japan - regular season (Dec prices via peakSeasonPrices)
+        'JAPAN': { cwb: 6899, cwob: 6699 },
+        'JEPUN': { cwb: 6899, cwob: 6699 },
+        // China
+        'BEIJING INNER MONGOLIA': { cwb: 4199, cwob: 3999 },
+        'INNER MONGOLIA': { cwb: 4199, cwob: 3999 },
+        'MONGOLIA': { cwb: 4199, cwob: 3999 },
+        'BIM': { cwb: 4199, cwob: 3999 },
+        'BEIJING XIAN': { cwb: 4199, cwob: 3999 },
+        'XIAN': { cwb: 4199, cwob: 3999 },
         'YUNNAN': { adult: 4999, cwb: 4499, cwob: 4299, tip: 250 },
-        'SPM': { cwob: 9599 },
-        'SPAIN': { cwob: 9599 },
-        'PORTUGAL': { cwob: 9599 },
-        'MOROCCO': { cwob: 9599 },
+        // Taiwan - Dec same price, no surcharge
+        'TAIWAN': { cwb: 3599, cwob: 3399, tip: 180 },
+        // Pakistan
+        'PAKISTAN': { cwb: 6799, cwob: 6599 },
+        // SPM - regular base (Dec via peakSeasonPrices)
+        'SPM': { cwb: 9299, cwob: 8899 },
+        'SPAIN': { cwb: 9299, cwob: 8899 },
+        'PORTUGAL': { cwb: 9299, cwob: 8899 },
+        'MOROCCO': { cwb: 9299, cwob: 8899 },
+        // Egypt - regular base (Dec via peakSeasonPrices)
+        'MESIR': { cwb: 6799, cwob: 6599 },
+        'JEJAK RASUL': { cwb: 6799, cwob: 6599 },
+        // Turkey - regular base (Dec via peakSeasonPrices)
+        'TURKEY': { cwb: 4899, cwob: 4699 },
+        'TURKIYE': { cwb: 4899, cwob: 4699 },
+        'TURKI': { cwb: 4899, cwob: 4699 },
+        // Caucasus - regular base (Dec: 8899/8699/8499 via peakSeasonPrices when available)
+        'CAUCASUS': { cwb: 8499, cwob: 8099 },
+        'KEMBARA CAUCASUS': { cwb: 8499, cwob: 8099 },
+        // CEE/Balkan - regular base
+        'CEE': { cwb: 8499, cwob: 8099 },
+        'CENTRAL EASTERN': { cwb: 8499, cwob: 8099 },
+        'BALKAN': { cwb: 8499, cwob: 8099 },
       };
 
       // Apply overrides
