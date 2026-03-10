@@ -131,9 +131,14 @@ export function TaskTemplateManager() {
     try {
       const token = localStorage.getItem("auth_token");
       const method = editingTemplate ? "PUT" : "POST";
+      // Only include frequency_days for weekly category
+      const formData = {
+        ...form,
+        frequency_days: form.category === 'weekly' ? form.frequency_days : null,
+      };
       const body = editingTemplate
-        ? { id: editingTemplate.id, ...form }
-        : form;
+        ? { id: editingTemplate.id, ...formData }
+        : formData;
 
       const response = await fetch("/api/tasks/templates", {
         method,
@@ -144,15 +149,18 @@ export function TaskTemplateManager() {
         body: JSON.stringify(body),
       });
 
+      const result = await response.json();
       if (response.ok) {
         toast.success(editingTemplate ? "Template dikemaskini" : "Template dicipta");
         setDialogOpen(false);
         resetForm();
         fetchTemplates();
+      } else {
+        toast.error(result.error || "Gagal menyimpan template");
       }
     } catch (error) {
       console.error("Failed to save template:", error);
-      toast.error("Gagal menyimpan template");
+      toast.error("Ralat sambungan. Sila cuba lagi.");
     } finally {
       setSaving(false);
     }

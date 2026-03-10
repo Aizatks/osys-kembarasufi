@@ -76,28 +76,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tajuk diperlukan' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const insertData: Record<string, unknown> = {
+      title,
+      description: description || null,
+      category: category || 'daily',
+      target_role: target_role || null,
+      points: points || 1,
+      is_mandatory: is_mandatory || false,
+      sort_order: sort_order || 0,
+      indicator_type: indicator_type || 'KPI',
+      weightage: weightage || 1,
+      attachment_requirement: attachment_requirement || 'none',
+      created_by: payload.userId,
+    };
+
+    // Only include frequency_days if provided (column may not exist in older DBs)
+    if (frequency_days !== undefined && frequency_days !== null) {
+      insertData.frequency_days = frequency_days;
+    }
+
+    let { data, error } = await supabase
       .from('task_templates')
-      .insert({
-        title,
-        description: description || null,
-        category: category || 'daily',
-        target_role: target_role || null,
-        points: points || 1,
-        is_mandatory: is_mandatory || false,
-        sort_order: sort_order || 0,
-        indicator_type: indicator_type || 'KPI',
-        weightage: weightage || 1,
-        attachment_requirement: attachment_requirement || 'none',
-        frequency_days: frequency_days || null,
-        created_by: payload.userId,
-      })
+      .insert(insertData)
       .select()
       .single();
 
+    // If frequency_days caused error (column doesn't exist), retry without it
+    if (error && error.message?.includes('frequency_days')) {
+      delete insertData.frequency_days;
+      const retry = await supabase.from('task_templates').insert(insertData).select().single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) {
       console.error('Create template error:', error);
-      return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
+      return NextResponse.json({ error: error.message || 'Ralat sistem' }, { status: 500 });
     }
 
     return NextResponse.json({ template: data, message: 'Template berjaya dicipta' });
@@ -145,16 +159,24 @@ export async function PUT(request: NextRequest) {
     if (attachment_requirement !== undefined) updateData.attachment_requirement = attachment_requirement;
     if (frequency_days !== undefined) updateData.frequency_days = frequency_days;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('task_templates')
       .update(updateData)
       .eq('id', id)
       .select()
       .single();
 
+    // If frequency_days caused error (column doesn't exist), retry without it
+    if (error && error.message?.includes('frequency_days')) {
+      delete updateData.frequency_days;
+      const retry = await supabase.from('task_templates').update(updateData).eq('id', id).select().single();
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (error) {
       console.error('Update template error:', error);
-      return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
+      return NextResponse.json({ error: error.message || 'Ralat sistem' }, { status: 500 });
     }
 
     return NextResponse.json({ template: data, message: 'Template berjaya dikemaskini' });
