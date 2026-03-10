@@ -129,7 +129,7 @@ export function TaskScoreDashboard() {
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
-  const ROLES = ["Sales", "Ejen", "Marketing", "Media", "Admin", "PIC"];
+  const ROLES = ["Sales", "Ejen", "B2B", "Marketing", "Media", "Admin", "PIC"];
 
   useEffect(() => {
     if (isAdmin === true) {

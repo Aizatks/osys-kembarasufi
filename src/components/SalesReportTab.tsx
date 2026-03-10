@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, Loader2, TrendingUp, DollarSign, Users, Upload, Download, Calendar, FileSpreadsheet, FileText, CheckSquare, X, ChevronUp, ChevronDown, ChevronsUpDown, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, TrendingUp, DollarSign, Users, Upload, Download, Calendar, FileSpreadsheet, FileText, CheckSquare, X, ChevronUp, ChevronDown, ChevronsUpDown, Search, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { PackageSelect } from "@/components/PackageSelect";
@@ -91,6 +91,7 @@ export function SalesReportTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [totalLeadsCount, setTotalLeadsCount] = useState<number>(0);
   const [importData, setImportData] = useState({
     staffId: "",
     sheetId: "",
@@ -155,19 +156,23 @@ export function SalesReportTab() {
     setLoading(true);
     try {
       const token = localStorage.getItem("auth_token");
-      let url = `/api/sales-reports?date_from=${dateRange.from}&date_to=${dateRange.to}`;
+      let staffParam = "";
       if ((user?.role === "superadmin" || user?.role === "admin") && !user?.impersonatedBy && selectedStaff !== "all") {
-        url += `&staff_id=${selectedStaff}`;
+        staffParam = `&staff_id=${selectedStaff}`;
       }
-      const res = await fetch(url, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      const data = await res.json();
-      if (data.data) {
-        setReports(data.data);
-      }
+      const salesUrl = `/api/sales-reports?date_from=${dateRange.from}&date_to=${dateRange.to}${staffParam}`;
+      const leadsUrl = `/api/lead-reports?date_from=${dateRange.from}&date_to=${dateRange.to}${staffParam}`;
+
+      const [salesRes, leadsRes] = await Promise.all([
+        fetch(salesUrl, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(leadsUrl, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+
+      const salesData = await salesRes.json();
+      const leadsData = await leadsRes.json();
+
+      if (salesData.data) setReports(salesData.data);
+      if (leadsData.data) setTotalLeadsCount(leadsData.data.length);
     } catch (error) {
       toast.error("Gagal memuatkan data");
     } finally {
@@ -634,6 +639,8 @@ export function SalesReportTab() {
   const totalSales = filteredReports.reduce((sum, r) => sum + (r.total || 0), 0);
   const totalPaid = filteredReports.reduce((sum, r) => sum + (r.paid || 0), 0);
   const totalPax = filteredReports.reduce((sum, r) => sum + (r.jumlah_pax || 0), 0);
+  // Closing Rate: jumlah resit (rekod sales) / jumlah lead × 100
+  const closingRate = totalLeadsCount > 0 ? ((filteredReports.length / totalLeadsCount) * 100).toFixed(1) : "0";
   const sortedReports = sortReports(filteredReports);
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(sortedReports.length / pageSize);
@@ -944,7 +951,7 @@ export function SalesReportTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -975,6 +982,18 @@ export function SalesReportTab() {
                 <p className="text-2xl font-bold">{totalPax}</p>
               </div>
               <Users className="w-8 h-8 opacity-50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-80">Closing Rate</p>
+                <p className="text-2xl font-bold">{closingRate}%</p>
+                <p className="text-xs opacity-70">{filteredReports.length} resit / {totalLeadsCount} lead</p>
+              </div>
+              <Percent className="w-8 h-8 opacity-50" />
             </div>
           </CardContent>
         </Card>

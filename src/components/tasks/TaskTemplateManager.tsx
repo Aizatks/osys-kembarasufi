@@ -46,7 +46,7 @@ interface TaskTemplate {
   { value: "monthly", label: "Bulanan" },
 ];
 
-const ROLES = ["Sales", "Ejen", "Marketing", "Admin", "PIC", "Pengurus", "C-Suite", "Media"];
+const ROLES = ["Sales", "Ejen", "B2B", "Marketing", "Admin", "PIC", "Pengurus", "C-Suite", "Media"];
 
 const DAYS = [
   { value: 1, label: 'Isn' },

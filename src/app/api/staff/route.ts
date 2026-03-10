@@ -77,13 +77,34 @@ export async function PUT(request: NextRequest) {
       case 'reactivate':
         updateData.status = 'approved';
         break;
-        case 'changeRole':
-          if (!role || !['staff', 'admin', 'marketing', 'c-suite', 'pengurus', 'tour-coordinator', 'ejen', 'sales-marketing-manager', 'admin-manager', 'hr-manager', 'finance-manager', 'tour-coordinator-manager', 'media-videographic', 'operation'].includes(role)) {
+        case 'changeRole': {
+          const validRoles = ['staff', 'admin', 'marketing', 'c-suite', 'pengurus', 'tour-coordinator', 'ejen', 'b2b', 'sales-marketing-manager', 'admin-manager', 'hr-manager', 'finance-manager', 'tour-coordinator-manager', 'media-videographic', 'operation'];
+          if (!role || !validRoles.includes(role)) {
             return NextResponse.json({ error: 'Peranan tidak sah' }, { status: 400 });
           }
+          // Map role → staff category (used in skor task pasukan)
+          const roleCategoryMap: Record<string, string> = {
+            'staff': 'Sales',
+            'ejen': 'Ejen',
+            'b2b': 'B2B',
+            'marketing': 'Marketing',
+            'admin': 'Admin',
+            'tour-coordinator': 'PIC',
+            'tour-coordinator-manager': 'PIC',
+            'media-videographic': 'Media',
+            'c-suite': 'C-Suite',
+            'pengurus': 'Pengurus',
+            'admin-manager': 'Admin',
+            'sales-marketing-manager': 'Sales',
+            'hr-manager': 'Admin',
+            'finance-manager': 'Admin',
+            'operation': 'Admin',
+          };
           updateData.role = role;
-          updateData.is_sales = ['staff', 'ejen', 'sales-marketing-manager'].includes(role);
+          updateData.category = roleCategoryMap[role] || role;
+          updateData.is_sales = ['staff', 'ejen', 'b2b', 'sales-marketing-manager'].includes(role);
           break;
+        }
       default:
         return NextResponse.json({ error: 'Tindakan tidak sah' }, { status: 400 });
     }

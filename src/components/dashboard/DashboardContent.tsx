@@ -48,13 +48,13 @@ interface DashboardData {
     salesTrend: { month: string; sales: number; leads: number }[];
     leadsBySource: { source: string; count: number }[];
     paymentBreakdown: { status: string; count: number }[];
-    staffStats: { name: string; sales: number; leads: number; amount: number }[];
+    staffStats: { name: string; sales: number; leads: number; amount: number; pax: number; closingRate: number }[];
   };
   tables: {
-    topStaff: { name: string; sales: number; leads: number; amount: number }[];
+    topStaff: { name: string; sales: number; leads: number; amount: number; pax: number; closingRate: number }[];
     recentSales: { id: string; nama_pakej: string; total: string; date_closed: string; status_bayaran: string; nama_wakil_peserta: string }[];
-    overdueFollowUps: { id: string; nama_pakej: string; no_phone: string; date_follow_up: string; follow_up_status: string }[];
-    upcomingTrips: { id: string; nama_pakej: string; tarikh_trip: string; jumlah_pax: string; nama_wakil_peserta: string }[];
+    overdueFollowUps: { id: string; nama_pakej: string; no_phone: string; date_follow_up: string; follow_up_status: string; staff_name?: string; staff_overdue_count?: number }[];
+    upcomingTrips: { id: string; nama_pakej: string; tarikh_trip: string; tarikh_trip_iso: string | null; jumlah_pax: string; nama_wakil_peserta: string; no_phone?: string }[];
   };
   staff: { id: string; name: string; role: string }[];
 }
