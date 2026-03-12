@@ -66,6 +66,7 @@ const ROLES = [
   { id: "tour-coordinator", label: "Tour Coordinator (PIC)", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400" },
   { id: "ejen", label: "Ejen", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400" },
   { id: "b2b", label: "B2B", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400" },
+  { id: "intern", label: "Intern", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400" },
   { id: "superadmin", label: "Superadmin", color: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400" },
   { id: "pengurus", label: "Pengurus (Legacy)", color: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-400" }
 ];

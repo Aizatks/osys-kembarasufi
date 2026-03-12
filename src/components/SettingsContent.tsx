@@ -31,7 +31,9 @@ const ROLES = [
   "finance-manager",
   "tour-coordinator-manager",
   "sales-marketing-manager",
-  "operation"
+  "operation",
+  "b2b",
+  "intern"
 ];
 const VIEWS = [
     { id: "dashboard-overview", label: "Dashboard Overview" },
