@@ -1073,8 +1073,8 @@ const handleBulkDelete = async () => {
                           Date Lead {getSortIcon("date_lead")}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold">Umur (Hari)</TableHead>
-                      <TableHead 
+                      <TableHead className="font-semibold hidden md:table-cell">Umur (Hari)</TableHead>
+                      <TableHead
                         className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
                         onClick={() => handleSort("no_phone")}
                       >
@@ -1082,8 +1082,8 @@ const handleBulkDelete = async () => {
                           No. Phone {getSortIcon("no_phone")}
                         </div>
                       </TableHead>
-                      <TableHead 
-                        className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
+                      <TableHead
+                        className="font-semibold cursor-pointer hover:bg-gray-100 select-none hidden md:table-cell"
                         onClick={() => handleSort("lead_from")}
                       >
                         <div className="flex items-center">
@@ -1098,15 +1098,15 @@ const handleBulkDelete = async () => {
                           Follow Up {getSortIcon("follow_up_status")}
                         </div>
                       </TableHead>
-                      <TableHead 
-                        className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
+                      <TableHead
+                        className="font-semibold cursor-pointer hover:bg-gray-100 select-none hidden lg:table-cell"
                         onClick={() => handleSort("date_follow_up")}
                       >
                         <div className="flex items-center">
                           Date FU {getSortIcon("date_follow_up")}
                         </div>
                       </TableHead>
-                      <TableHead className="font-semibold">Remark</TableHead>
+                      <TableHead className="font-semibold hidden lg:table-cell">Remark</TableHead>
                       {(user?.role === "superadmin" || user?.role === "admin") && (
                         <TableHead 
                           className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
@@ -1139,7 +1139,7 @@ const handleBulkDelete = async () => {
                           )}
                         </TableCell>
                         <TableCell>{report.date_lead ? new Date(report.date_lead).toLocaleDateString("ms-MY") : "-"}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {age !== null && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               age <= 7 ? "bg-green-100 text-green-700" :
@@ -1151,7 +1151,7 @@ const handleBulkDelete = async () => {
                           )}
                         </TableCell>
                         <TableCell className="font-mono text-sm">{report.no_phone || "-"}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                             {report.lead_from}
                           </span>
@@ -1166,8 +1166,8 @@ const handleBulkDelete = async () => {
                             {report.follow_up_status}
                           </span>
                         </TableCell>
-                        <TableCell>{report.date_follow_up ? new Date(report.date_follow_up).toLocaleDateString("ms-MY") : "-"}</TableCell>
-                        <TableCell className="max-w-[120px] truncate text-sm text-gray-600">{report.remark || "-"}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{report.date_follow_up ? new Date(report.date_follow_up).toLocaleDateString("ms-MY") : "-"}</TableCell>
+                        <TableCell className="max-w-[120px] truncate text-sm text-gray-600 hidden lg:table-cell">{report.remark || "-"}</TableCell>
                         {(user?.role === "superadmin" || user?.role === "admin") && (
                           <TableCell className="text-sm text-gray-600">{report.staff?.name || "-"}</TableCell>
                           )}

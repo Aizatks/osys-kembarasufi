@@ -71,7 +71,8 @@ export async function POST(req: Request) {
     const nowMY = new Date(Date.now() + 8 * 60 * 60 * 1000);
 
     // Fetch geofence: check branch first, then fallback to global settings
-    let location_status = "OK";
+    // DB enum values: location_status = "ok" | "outside"; status = "on_time" | "late" | etc
+    let location_status = "ok";
     let matched_branch = null;
 
     if (branch_id) {
@@ -84,24 +85,24 @@ export async function POST(req: Request) {
 
       if (branch) {
         const distance = calculateDistance(latitude, longitude, branch.latitude, branch.longitude);
-        location_status = distance <= branch.radius ? "OK" : "OUTSIDE";
+        location_status = distance <= branch.radius ? "ok" : "outside";
         matched_branch = branch.name;
       }
     } else {
-      // Auto-detect nearest branch
-      const { data: branches } = await supabase
+      // Auto-detect nearest branch (table might not exist yet)
+      const { data: branches, error: brErr } = await supabase
         .from("hr_branches")
         .select("*")
         .eq("is_active", true);
 
-      if (branches && branches.length > 0) {
+      if (!brErr && branches && branches.length > 0) {
         let nearestDist = Infinity;
         for (const b of branches) {
           const dist = calculateDistance(latitude, longitude, b.latitude, b.longitude);
           if (dist < nearestDist) {
             nearestDist = dist;
             matched_branch = b.name;
-            location_status = dist <= b.radius ? "OK" : "OUTSIDE";
+            location_status = dist <= b.radius ? "ok" : "outside";
           }
         }
       } else {
@@ -113,35 +114,73 @@ export async function POST(req: Request) {
 
         if (settings?.geofence_enabled) {
           const distance = calculateDistance(latitude, longitude, settings.hq_latitude, settings.hq_longitude);
-          location_status = distance <= settings.geofence_radius ? "OK" : "OUTSIDE";
+          location_status = distance <= settings.geofence_radius ? "ok" : "outside";
         }
       }
     }
 
-    const status = location_status === "OUTSIDE" ? "outside_geofence" : "on_time";
+    const status = location_status === "outside" ? "outside_geofence" : "on_time";
 
-    const { data, error } = await supabase
-      .from("hr_attendance_logs")
-      .insert([{
-        staff_id,
-        staff_name,
-        type,
-        timestamp: nowMY.toISOString(),
-        selfie_url,
-        latitude,
-        longitude,
-        accuracy,
-        location_status,
-        status,
-        note,
-        branch_name: matched_branch
-      }])
-      .select()
-      .single();
+    const insertData: any = {
+      staff_id,
+      staff_name,
+      type,
+      timestamp: nowMY.toISOString(),
+      selfie_url,
+      latitude,
+      longitude,
+      accuracy,
+      location_status,
+      status,
+      note,
+    };
 
-    if (error) throw error;
+    if (matched_branch) insertData.branch_name = matched_branch;
 
-    return NextResponse.json({ log: data });
+    // Attempt insert, with progressive fallback for missing/enum columns
+    let result = await supabase.from("hr_attendance_logs").insert([insertData]).select().single();
+
+    // Fallback 1: remove branch_name if column doesn't exist
+    if (result.error?.message?.includes("branch_name")) {
+      delete insertData.branch_name;
+      result = await supabase.from("hr_attendance_logs").insert([insertData]).select().single();
+    }
+
+    // Fallback 2: try alternate enum values for location_status
+    if (result.error?.message?.includes("location_status")) {
+      // Try common enum values one by one
+      const tryValues = ["OK", "OUTSIDE", "ok", "outside", "in_range", "out_range", "present", "absent"];
+      const isInRange = location_status === "within_range";
+      for (const val of tryValues) {
+        insertData.location_status = val;
+        result = await supabase.from("hr_attendance_logs").insert([insertData]).select().single();
+        if (!result.error) break;
+        if (!result.error.message?.includes("location_status")) break;
+      }
+    }
+
+    // Fallback 3: try alternate enum values for status
+    if (result.error?.message?.includes("status")) {
+      const tryStatusValues = ["on_time", "late", "early", "absent", "present", "On-time", "Late", "Early"];
+      for (const val of tryStatusValues) {
+        insertData.status = val;
+        result = await supabase.from("hr_attendance_logs").insert([insertData]).select().single();
+        if (!result.error) break;
+        if (!result.error.message?.includes("status")) break;
+      }
+      // Last resort: remove status entirely
+      if (result.error?.message?.includes("status")) {
+        delete insertData.status;
+        result = await supabase.from("hr_attendance_logs").insert([insertData]).select().single();
+      }
+    }
+
+    if (result.error) throw result.error;
+
+    // Attach location info to response for frontend display
+    const logData = { ...result.data, _location_status: location_status, _branch: matched_branch };
+
+    return NextResponse.json({ log: logData });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

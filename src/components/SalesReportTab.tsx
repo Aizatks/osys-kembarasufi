@@ -1174,9 +1174,9 @@ export function SalesReportTab() {
                         Date Closed {getSortIcon("date_closed")}
                       </div>
                     </TableHead>
-                    <TableHead className="font-semibold">Umur (Hari)</TableHead>
-                    <TableHead 
-                      className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
+                    <TableHead className="font-semibold hidden md:table-cell">Umur (Hari)</TableHead>
+                    <TableHead
+                      className="font-semibold cursor-pointer hover:bg-gray-100 select-none hidden md:table-cell"
                       onClick={() => handleSort("tarikh_trip")}
                     >
                       <div className="flex items-center">
@@ -1215,15 +1215,15 @@ export function SalesReportTab() {
                         Status {getSortIcon("status_bayaran")}
                       </div>
                     </TableHead>
-                    <TableHead 
-                      className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
+                    <TableHead
+                      className="font-semibold cursor-pointer hover:bg-gray-100 select-none hidden lg:table-cell"
                       onClick={() => handleSort("nama_wakil_peserta")}
                     >
                       <div className="flex items-center">
                         Wakil {getSortIcon("nama_wakil_peserta")}
                       </div>
                     </TableHead>
-                    <TableHead className="font-semibold">Sumber</TableHead>
+                    <TableHead className="font-semibold hidden lg:table-cell">Sumber</TableHead>
                     {user?.role === "superadmin" && (
                       <TableHead 
                         className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
@@ -1251,7 +1251,7 @@ export function SalesReportTab() {
                         <TableCell className="font-mono text-sm">{report.no_phone}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{report.nama_pakej}</TableCell>
                         <TableCell>{report.date_closed ? new Date(report.date_closed).toLocaleDateString("ms-MY") : "-"}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {age !== null && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               age <= 7 ? "bg-green-100 text-green-700" :
@@ -1262,7 +1262,7 @@ export function SalesReportTab() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>{report.tarikh_trip || "-"}</TableCell>
+                        <TableCell className="hidden md:table-cell">{report.tarikh_trip || "-"}</TableCell>
                         <TableCell className="text-center">{report.jumlah_pax}</TableCell>
                         <TableCell className="text-right font-semibold">RM {(report.total || 0).toLocaleString()}</TableCell>
                         <TableCell className="text-right">RM {(report.paid || 0).toLocaleString()}</TableCell>
@@ -1276,8 +1276,8 @@ export function SalesReportTab() {
                             {report.status_bayaran}
                           </span>
                         </TableCell>
-                        <TableCell className="max-w-[120px] truncate">{report.nama_wakil_peserta}</TableCell>
-                        <TableCell>
+                        <TableCell className="max-w-[120px] truncate hidden lg:table-cell">{report.nama_wakil_peserta}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           {report.lead_from ? (
                             <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 whitespace-nowrap">
                               {report.lead_from}

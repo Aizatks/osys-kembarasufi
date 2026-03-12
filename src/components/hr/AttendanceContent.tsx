@@ -398,8 +398,8 @@ export function AttendanceContent() {
               hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur"
             })}
           </p>
-          <Badge variant={log.location_status === "OK" ? "outline" : "destructive"} className="text-[10px] h-5">
-            {log.location_status === "OK" ? "dalam kawasan" : "luar kawasan"}
+          <Badge variant={["ok", "OK", "within_range"].includes(log.location_status) ? "outline" : "destructive"} className="text-[10px] h-5">
+            {["ok", "OK", "within_range"].includes(log.location_status) ? "dalam kawasan" : "luar kawasan"}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">{STATUS_LABELS[log.status] || log.status}</p>
