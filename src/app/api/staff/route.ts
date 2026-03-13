@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest) {
         updateData.status = 'approved';
         break;
         case 'changeRole': {
-          const validRoles = ['staff', 'admin', 'marketing', 'c-suite', 'pengurus', 'tour-coordinator', 'ejen', 'b2b', 'sales-marketing-manager', 'admin-manager', 'hr-manager', 'finance-manager', 'tour-coordinator-manager', 'media-videographic', 'operation'];
+          const validRoles = ['staff', 'admin', 'marketing', 'c-suite', 'pengurus', 'tour-coordinator', 'ejen', 'b2b', 'sales-marketing-manager', 'admin-manager', 'hr-manager', 'finance-manager', 'tour-coordinator-manager', 'media-videographic', 'operation', 'intern'];
           if (!role || !validRoles.includes(role)) {
             return NextResponse.json({ error: 'Peranan tidak sah' }, { status: 400 });
           }
@@ -99,6 +99,7 @@ export async function PUT(request: NextRequest) {
             'hr-manager': 'Admin',
             'finance-manager': 'Admin',
             'operation': 'Admin',
+            'intern': 'Intern',
           };
           updateData.role = role;
           updateData.category = roleCategoryMap[role] || role;
