@@ -8,11 +8,100 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Phone, Target, UserCheck, Upload, Download, Calendar, FileSpreadsheet, FileText, AlertTriangle, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Search, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Phone, Target, UserCheck, Upload, Download, Calendar, FileSpreadsheet, FileText, AlertTriangle, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Search, X, ScanSearch, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PackageSelect } from "@/components/PackageSelect";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+interface OccurrenceInfo {
+  id: string;
+  nama_pakej: string;
+  date_lead: string;
+  bulan: string;
+  is_duplicate: boolean;
+  staff?: { id: string; name: string };
+}
+
+function DuplicateBadge({ phone, recordId }: { phone: string; recordId: string }) {
+  const [occurrences, setOccurrences] = useState<OccurrenceInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetched, setFetched] = useState(false);
+
+  const fetchOccurrences = async () => {
+    if (fetched) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`/api/lead-reports/original?phone=${encodeURIComponent(phone)}&exclude_id=${recordId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.occurrences) {
+        setOccurrences(data.occurrences);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+      setFetched(true);
+    }
+  };
+
+  const totalCount = occurrences.length + 1; // +1 for current record
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className="flex-shrink-0 px-1.5 py-0.5 text-xs bg-orange-200 text-orange-800 rounded cursor-pointer hover:bg-orange-300 transition-colors"
+          onClick={fetchOccurrences}
+        >
+          DUPLICATE
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" side="bottom" align="start">
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-gray-500 p-4">
+            <Loader2 className="w-3 h-3 animate-spin" /> Mencari semua rekod...
+          </div>
+        ) : occurrences.length > 0 ? (
+          <div>
+            <div className="px-4 py-2.5 bg-orange-50 border-b">
+              <p className="text-xs font-semibold text-orange-800">
+                Nombor ini muncul {totalCount} kali dalam sistem
+              </p>
+            </div>
+            <div className="max-h-[250px] overflow-y-auto divide-y">
+              {occurrences.map((occ, idx) => (
+                <div key={occ.id} className="px-4 py-2.5 text-sm hover:bg-gray-50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${
+                      !occ.is_duplicate ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"
+                    }`}>
+                      {!occ.is_duplicate ? "ASAL" : `#${idx + 1}`}
+                    </span>
+                    <span className="font-medium text-gray-900 truncate">{occ.nama_pakej || "-"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span>{occ.date_lead ? new Date(occ.date_lead).toLocaleDateString("ms-MY") : "-"}</span>
+                    <span>{occ.bulan || "-"}</span>
+                    {occ.staff && (
+                      <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">{occ.staff.name}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 p-4">Tiada rekod lain ditemui</p>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface LeadReport {
   id: string;
@@ -72,9 +161,10 @@ export function LeadReportTab() {
   const [importLoading, setImportLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [editingReport, setEditingReport] = useState<LeadReport | null>(null);
-  const [hideDuplicates, setHideDuplicates] = useState(false);
+  const [duplicateFilter, setDuplicateFilter] = useState<"all" | "hide" | "only">("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -297,6 +387,35 @@ const handleBulkDelete = async () => {
     }
   };
 
+  const handleScanDuplicates = async () => {
+    setScanLoading(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/lead-reports/scan-duplicates", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          date_from: dateRange.from,
+          date_to: dateRange.to,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message);
+        fetchReports();
+      } else {
+        toast.error(data.error || "Scan gagal");
+      }
+    } catch (error) {
+      toast.error("Ralat semasa scan duplicates");
+    } finally {
+      setScanLoading(false);
+    }
+  };
+
   const handleExport = async () => {
     setExportLoading(true);
     try {
@@ -312,7 +431,7 @@ const handleBulkDelete = async () => {
           date_from: dateRange.from,
           date_to: dateRange.to,
           staff_id: selectedStaff,
-          hide_duplicates: hideDuplicates,
+          hide_duplicates: duplicateFilter === "hide",
         }),
       });
       
@@ -338,8 +457,10 @@ const handleBulkDelete = async () => {
 
   const downloadCSV = (data: LeadReport[], filename: string) => {
     let exportData = data;
-    if (hideDuplicates) {
+    if (duplicateFilter === "hide") {
       exportData = data.filter(r => !r.is_duplicate);
+    } else if (duplicateFilter === "only") {
+      exportData = data.filter(r => r.is_duplicate);
     }
     
     const headers = [
@@ -554,7 +675,24 @@ const handleBulkDelete = async () => {
     return diffDays;
   };
 
-  const filteredReportsBase = hideDuplicates ? reports.filter(r => !r.is_duplicate) : reports;
+  const filteredReportsBase = useMemo(() => {
+    if (duplicateFilter === "hide") {
+      return reports.filter(r => !r.is_duplicate);
+    }
+    if (duplicateFilter === "only") {
+      // Show only duplicates, but for the same phone+staff combo, show only ONE
+      // This way user can safely delete without accidentally removing the original
+      const duplicates = reports.filter(r => r.is_duplicate);
+      const seen = new Set<string>();
+      return duplicates.filter(r => {
+        const key = `${r.no_phone}_${r.staff?.id || "no-staff"}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+    return reports;
+  }, [reports, duplicateFilter]);
   
   const filteredReports = useMemo(() => {
     let result = filteredReportsBase;
@@ -611,7 +749,7 @@ const handleBulkDelete = async () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [pageSize, dateRange.from, dateRange.to, selectedStaff, hideDuplicates, searchQuery, filterLeadFrom, filterFollowUp]);
+  }, [pageSize, dateRange.from, dateRange.to, selectedStaff, duplicateFilter, searchQuery, filterLeadFrom, filterFollowUp]);
 
   // Clear selections when page changes
   useEffect(() => {
@@ -656,15 +794,53 @@ const handleBulkDelete = async () => {
             />
           </div>
           
-          <Button 
-            variant={hideDuplicates ? "default" : "outline"}
-            className={hideDuplicates ? "bg-orange-500 hover:bg-orange-600" : "border-orange-300 text-orange-700 hover:bg-orange-50"}
-            onClick={() => setHideDuplicates(!hideDuplicates)}
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            {hideDuplicates ? "Tunjuk Semua" : "Sembunyikan Duplicate"}
-          </Button>
-          
+          <div className="flex items-center border rounded-lg overflow-hidden">
+            <button
+              className={`px-3 py-2 text-xs font-medium transition-colors ${
+                duplicateFilter === "all"
+                  ? "bg-gray-800 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+              onClick={() => setDuplicateFilter("all")}
+            >
+              Semua
+            </button>
+            <button
+              className={`px-3 py-2 text-xs font-medium transition-colors border-l ${
+                duplicateFilter === "hide"
+                  ? "bg-orange-500 text-white"
+                  : "bg-white text-orange-700 hover:bg-orange-50"
+              }`}
+              onClick={() => setDuplicateFilter("hide")}
+            >
+              <EyeOff className="w-3 h-3 inline mr-1" />
+              Sembunyikan Dup
+            </button>
+            <button
+              className={`px-3 py-2 text-xs font-medium transition-colors border-l ${
+                duplicateFilter === "only"
+                  ? "bg-orange-500 text-white"
+                  : "bg-white text-orange-700 hover:bg-orange-50"
+              }`}
+              onClick={() => setDuplicateFilter("only")}
+            >
+              <Eye className="w-3 h-3 inline mr-1" />
+              Duplicate Sahaja
+            </button>
+          </div>
+
+          {user?.role === "superadmin" && (
+            <Button
+              variant="outline"
+              className="border-red-300 text-red-700 hover:bg-red-50"
+              onClick={handleScanDuplicates}
+              disabled={scanLoading}
+            >
+              {scanLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ScanSearch className="w-4 h-4 mr-2" />}
+              {scanLoading ? "Scanning..." : "Scan Duplicate"}
+            </Button>
+          )}
+
           <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
@@ -684,15 +860,16 @@ const handleBulkDelete = async () => {
                   <Label>Tarikh Hingga</Label>
                   <Input type="date" value={dateRange.to} onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
-                    id="export-hide-duplicates"
-                    checked={hideDuplicates}
-                    onChange={(e) => setHideDuplicates(e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                  <label htmlFor="export-hide-duplicates" className="text-sm">Sembunyikan nombor duplicate</label>
+                <div className="space-y-2">
+                  <Label className="text-sm">Filter Duplicate</Label>
+                  <Select value={duplicateFilter} onValueChange={(v) => setDuplicateFilter(v as "all" | "hide" | "only")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tunjuk Semua</SelectItem>
+                      <SelectItem value="hide">Sembunyikan Duplicate</SelectItem>
+                      <SelectItem value="only">Duplicate Sahaja</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                   {user?.role !== "superadmin" || user?.impersonatedBy ? (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
@@ -1138,11 +1315,13 @@ const handleBulkDelete = async () => {
                             aria-label={`Pilih ${report.nama_pakej}`}
                           />
                         </TableCell>
-                        <TableCell className="max-w-[150px] truncate font-medium">
-                          {report.nama_pakej}
-                          {report.is_duplicate && (
-                            <span className="ml-2 px-1.5 py-0.5 text-xs bg-orange-200 text-orange-800 rounded">DUPLICATE</span>
-                          )}
+                        <TableCell className="max-w-[200px] font-medium">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate">{report.nama_pakej}</span>
+                            {report.is_duplicate && (
+                              <DuplicateBadge phone={report.no_phone} recordId={report.id} />
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{report.date_lead ? new Date(report.date_lead).toLocaleDateString("ms-MY") : "-"}</TableCell>
                         <TableCell className="hidden md:table-cell">

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import * as XLSX from "xlsx";
 import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
 import * as cheerio from "cheerio";
+import { cleanPhoneNumber, checkDuplicateInBatch, fetchExistingPhones } from "@/lib/phone-utils";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -86,22 +87,6 @@ function cleanCurrency(val: any): number {
   return isNaN(num) ? 0 : num;
 }
 
-function cleanPhoneNumber(phone: string | null): string | null {
-  if (!phone) return null;
-  let cleaned = String(phone).replace(/[^0-9]/g, '');
-  if (cleaned.length < 8) return null;
-  if (cleaned.startsWith('0')) {
-    cleaned = '60' + cleaned.slice(1);
-  }
-  return cleaned;
-}
-
-function checkDuplicateInBatch(phone: string | null, batchPhones: Set<string>): boolean {
-  if (!phone) return false;
-  const cleanPhone = cleanPhoneNumber(phone);
-  if (!cleanPhone || cleanPhone.length < 8) return false;
-  return batchPhones.has(cleanPhone);
-}
 
 async function fetchGoogleSheetAsCSV(sheetId: string, gid: string): Promise<any[][]> {
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
@@ -328,7 +313,13 @@ export async function POST(request: NextRequest) {
         
         const currentBatchPhones = new Set<string>();
         const filterMonth = formData.get('filterMonth') as string | null;
-        
+
+        // Fetch all existing phone numbers from DB for duplicate detection
+        let existingPhones = new Set<string>();
+        if (type === 'leads') {
+          existingPhones = await fetchExistingPhones(supabase);
+        }
+
         if (type === 'sales') {
         for (let i = 1; i < allRows.length; i++) {
           const row = allRows[i];
@@ -424,9 +415,14 @@ export async function POST(request: NextRequest) {
             }
           
             const cleanedPhone = cleanPhoneNumber(noPhone ? String(noPhone) : null);
-            const isDuplicate = checkDuplicateInBatch(noPhone ? String(noPhone) : null, currentBatchPhones);
-            if (cleanedPhone) currentBatchPhones.add(cleanedPhone);
-            
+            const isDuplicateInBatch = checkDuplicateInBatch(noPhone ? String(noPhone) : null, currentBatchPhones);
+            const isDuplicateInDB = cleanedPhone ? existingPhones.has(cleanedPhone) : false;
+            const isDuplicate = isDuplicateInBatch || isDuplicateInDB;
+            if (cleanedPhone) {
+              currentBatchPhones.add(cleanedPhone);
+              existingPhones.add(cleanedPhone);
+            }
+
             const { error } = await supabase.from("lead_reports").insert({
               staff_id: staffId,
               bulan: String(bulan).toUpperCase(),
@@ -558,7 +554,10 @@ export async function POST(request: NextRequest) {
           const headers = rows[0].map((h: any) => String(h || '').toLowerCase().trim());
           
           const googleSheetBatchPhones = new Set<string>();
-          
+
+          // Fetch all existing phone numbers from DB for duplicate detection
+          const existingPhonesGS = await fetchExistingPhones(supabase);
+
           for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
             if (!row || row.length === 0 || row.every((cell: any) => !cell || !String(cell).trim())) continue;
@@ -584,9 +583,14 @@ export async function POST(request: NextRequest) {
             if (String(bulan).toLowerCase() === 'bulan' || String(namaPakej).toLowerCase() === 'nama pakej') continue;
             
             const cleanedPhone = cleanPhoneNumber(noPhone ? String(noPhone) : null);
-            const isDuplicate = checkDuplicateInBatch(noPhone ? String(noPhone) : null, googleSheetBatchPhones);
-            if (cleanedPhone) googleSheetBatchPhones.add(cleanedPhone);
-            
+            const isDuplicateInBatch = checkDuplicateInBatch(noPhone ? String(noPhone) : null, googleSheetBatchPhones);
+            const isDuplicateInDB = cleanedPhone ? existingPhonesGS.has(cleanedPhone) : false;
+            const isDuplicate = isDuplicateInBatch || isDuplicateInDB;
+            if (cleanedPhone) {
+              googleSheetBatchPhones.add(cleanedPhone);
+              existingPhonesGS.add(cleanedPhone);
+            }
+
             const { error } = await supabase.from("lead_reports").insert({
               staff_id: staffId,
               bulan: String(bulan).toUpperCase(),

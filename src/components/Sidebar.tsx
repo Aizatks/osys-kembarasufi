@@ -310,12 +310,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                   {/* Laporan Group */}
                   <div className="space-y-1">
                     {isCollapsed ? (
-                      <div className="space-y-1">
-                        {canSeeMarketing && <MenuItem view="marketing-report" icon={BarChart2} label="Marketing Report" colorClass="violet" />}
-                        {canSeeSalesReports && <MenuItem view="dashboard-sales" icon={TrendingUp} label="Sales Report" colorClass="amber" />}
-                        {canSeeLeadReport && <MenuItem view="dashboard-leads" icon={Users} label="Lead Report" colorClass="blue" />}
-                        {canSeeQuotations && <MenuItem view="quotations" icon={BarChart3} label="Sebut Harga" colorClass="amber" />}
-                      </div>
+                      <MenuItem view="dashboard-overview" icon={FileBarChart} label="Laporan" colorClass="violet" />
                     ) : (
                       <div className="space-y-1">
                         <button
@@ -349,11 +344,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                   {/* Task Group */}
                   <div className="space-y-1">
                     {isCollapsed ? (
-                      <div className="space-y-1">
-                        <MenuItem view="tasks" icon={CheckSquare} label="Task Harian" colorClass="amber" />
-                        {canSeeTaskScores && <MenuItem view="task-scores" icon={Trophy} label="Skor Task" colorClass="amber" />}
-                        <MenuItem view="task-custom" icon={Pin} label="Task Khas" colorClass="amber" />
-                      </div>
+                      <MenuItem view="tasks" icon={CheckSquare} label="Task Management" colorClass="amber" />
                     ) : (
                       <div className="space-y-1">
                         <button
@@ -384,10 +375,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                   {/* Bahan Media Group */}
                   <div className="space-y-1">
                     {isCollapsed ? (
-                      <div className="space-y-1">
-                        {canSeeMedia && <MenuItem view="media-library" icon={Film} label="Media Library" colorClass="violet" />}
-                        {canSeeCreative && <MenuItem view="creative-requests" icon={Send} label="Creative Request" colorClass="blue" />}
-                      </div>
+                      (canSeeMedia || canSeeCreative) && <MenuItem view="media-library" icon={ImageIcon} label="Bahan Media" colorClass="violet" />
                     ) : (
                       <div className="space-y-1">
                         <button
@@ -416,11 +404,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                   {/* HR Section */}
                   <div className="space-y-1">
                     {isCollapsed ? (
-                      <div className="space-y-1">
-                        {canSeeHR && <MenuItem view="hr-attendance" icon={Clock} label="Attendance" colorClass="blue" />}
-                        {canSeeMemos && <MenuItem view="hr-memos" icon={FileText} label="Memo" colorClass="blue" />}
-                        {canSeeClaims && <MenuItem view="hr-claims" icon={Wallet} label="Claim" colorClass="blue" />}
-                      </div>
+                      <MenuItem view="hr-attendance" icon={UserCircle} label="HR & Staff" colorClass="blue" />
                     ) : (
                       <div className="space-y-1">
                         <button
@@ -455,11 +439,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                   {/* Operasi Section */}
                   <div className="space-y-1">
                     {isCollapsed ? (
-                      <div className="space-y-1">
-                        {canSeeCalendar && <MenuItem view="calendar" icon={CalendarIcon} label="Kalendar" colorClass="emerald" />}
-                        {canSeeOperations && <MenuItem view="operations-roster" icon={Plane} label="Airport Duty" colorClass="rose" />}
-                        {canSeeTripDates && <MenuItem view="trip-dates" icon={CalendarRange} label="Trip Dates" colorClass="rose" />}
-                      </div>
+                      <MenuItem view="calendar" icon={Plane} label="Operasi" colorClass="rose" />
                     ) : (
                       <div className="space-y-1">
                         <button
@@ -491,10 +471,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                   {/* WhatsApp Section */}
                   <div className="space-y-1">
                     {isCollapsed ? (
-                      <div className="space-y-1">
-                        <MenuItem view="whatsapp" icon={Send} label="WhatsApp" colorClass="emerald" />
-                        {canSeeWARotator && <MenuItem view="whatsapp-rotator" icon={RefreshCw} label="Rotator" colorClass="emerald" />}
-                      </div>
+                      <MenuItem view="whatsapp" icon={Send} label="WhatsApp" colorClass="emerald" />
                     ) : (
                       <div className="space-y-1">
                         <button

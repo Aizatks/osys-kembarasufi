@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+import { cleanPhoneNumber, checkPhoneExistsInDB } from "@/lib/phone-utils";
 
 function getSupabase() {
   return createClient(
@@ -133,9 +134,13 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     const supabase = getSupabase();
-    
+
     const staffIdToUse = isImpersonating && viewingAsStaff ? viewingAsStaff.id : staff.id;
-    
+
+    // Normalize phone and check for duplicates
+    const normalizedPhone = cleanPhoneNumber(body.no_phone);
+    const isDuplicate = await checkPhoneExistsInDB(supabase, body.no_phone);
+
     const { data, error } = await supabase
       .from("lead_reports")
       .insert({
@@ -143,19 +148,20 @@ export async function POST(request: NextRequest) {
         bulan: body.bulan,
         nama_pakej: body.nama_pakej,
         date_lead: body.date_lead,
-        no_phone: body.no_phone,
+        no_phone: normalizedPhone || body.no_phone,
         lead_from: body.lead_from,
         remark: body.remark,
         follow_up_status: body.follow_up_status || null,
         date_follow_up: body.date_follow_up || null,
+        is_duplicate: isDuplicate,
       })
       .select()
       .single();
-    
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
+
     return NextResponse.json({ data });
   } catch (error) {
     console.error("Error creating lead report:", error);
@@ -194,17 +200,22 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     
+    // Normalize phone and re-check duplicate (exclude self)
+    const normalizedPhone = cleanPhoneNumber(body.no_phone);
+    const isDuplicate = await checkPhoneExistsInDB(supabase, body.no_phone, body.id);
+
     const { data, error } = await supabase
       .from("lead_reports")
       .update({
         bulan: body.bulan,
         nama_pakej: body.nama_pakej,
         date_lead: body.date_lead,
-        no_phone: body.no_phone,
+        no_phone: normalizedPhone || body.no_phone,
         lead_from: body.lead_from,
         remark: body.remark,
         follow_up_status: body.follow_up_status || null,
         date_follow_up: body.date_follow_up || null,
+        is_duplicate: isDuplicate,
         updated_at: new Date().toISOString(),
       })
       .eq("id", body.id)
