@@ -87,72 +87,62 @@ export async function GET(request: NextRequest) {
     let filterStart: string | null = null;
     let filterEnd: string | null = null;
 
+    // Helper: format date as YYYY-MM-DD string (timezone-safe, no ISO shift)
+    const toDateStr = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
     if (preset) {
       const today = new Date(now);
       today.setHours(0, 0, 0, 0);
       switch (preset) {
         case 'today':
-          filterStart = today.toISOString();
-          filterEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString();
+          filterStart = toDateStr(today);
+          filterEnd = toDateStr(today);
           break;
         case 'week': {
           const weekStart = new Date(today);
           weekStart.setDate(today.getDate() - today.getDay());
-          filterStart = weekStart.toISOString();
-          filterEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString();
+          filterStart = toDateStr(weekStart);
+          filterEnd = toDateStr(today);
           break;
         }
         case 'month':
-          filterStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-          filterEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString();
+          filterStart = toDateStr(new Date(today.getFullYear(), today.getMonth(), 1));
+          filterEnd = toDateStr(new Date(today.getFullYear(), today.getMonth() + 1, 0)); // last day of month
           break;
         case 'year':
-          filterStart = new Date(today.getFullYear(), 0, 1).toISOString();
-          filterEnd = new Date(today.getFullYear() + 1, 0, 1).toISOString();
+          filterStart = toDateStr(new Date(today.getFullYear(), 0, 1));
+          filterEnd = toDateStr(new Date(today.getFullYear(), 11, 31));
           break;
       }
     } else if (dateFrom || dateTo) {
-      filterStart = dateFrom ? `${dateFrom}T00:00:00.000Z` : null;
-      filterEnd = dateTo ? `${dateTo}T23:59:59.999Z` : null;
+      filterStart = dateFrom || null;
+      filterEnd = dateTo || null;
     }
 
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const thisWeekStart = new Date(now);
-    thisWeekStart.setDate(now.getDate() - now.getDay());
-    thisWeekStart.setHours(0, 0, 0, 0);
-
     // Fetch semua data dengan pagination (bypass 1000 limit)
-    const [sales, leads, staffRes, allSales, weekLeads, monthSales] = await Promise.all([
+    // sales & leads = filtered by date range
+    // allSales = juga filtered (untuk trend chart yang konsisten dengan filter)
+    const [sales, leads, staffRes] = await Promise.all([
       fetchAllRows((from, to) => {
         let q = supabase.from('sales_reports').select('*').range(from, to);
-        if (filterStart) q = q.gte('date_closed', filterStart.split('T')[0]);
-        if (filterEnd) q = q.lte('date_closed', filterEnd.split('T')[0]);
+        if (filterStart) q = q.gte('date_closed', filterStart);
+        if (filterEnd) q = q.lte('date_closed', filterEnd);
         if (staffId) q = q.eq('staff_id', staffId);
         return q;
       }),
       fetchAllRows((from, to) => {
         let q = supabase.from('lead_reports').select('*').range(from, to);
-        if (filterStart) q = q.gte('date_lead', filterStart.split('T')[0]);
-        if (filterEnd) q = q.lte('date_lead', filterEnd.split('T')[0]);
+        if (filterStart) q = q.gte('date_lead', filterStart);
+        if (filterEnd) q = q.lte('date_lead', filterEnd);
         if (staffId) q = q.eq('staff_id', staffId);
         return q;
       }),
       supabase.from('staff').select('id, name, role').eq('status', 'approved'),
-      fetchAllRows((from, to) =>
-        supabase.from('sales_reports').select('*').range(from, to)
-      ),
-      fetchAllRows((from, to) =>
-        supabase.from('lead_reports').select('*')
-          .gte('date_lead', thisWeekStart.toISOString().split('T')[0])
-          .range(from, to)
-      ),
-      fetchAllRows((from, to) =>
-        supabase.from('sales_reports').select('*')
-          .gte('date_closed', thisMonthStart.toISOString().split('T')[0])
-          .lt('date_closed', nextMonthStart.toISOString().split('T')[0])
-          .range(from, to)
-      ),
     ]);
 
     const staff = staffRes.data || [];
@@ -160,25 +150,39 @@ export async function GET(request: NextRequest) {
     const totalSales = sales.reduce((sum: number, s: Record<string, unknown>) => sum + (parseFloat(s.total as string) || 0), 0);
     const totalPaid = sales.reduce((sum: number, s: Record<string, unknown>) => sum + (parseFloat(s.paid as string) || 0), 0);
     const outstandingPayment = totalSales - totalPaid;
-    const totalPax = monthSales.reduce((sum: number, s: Record<string, unknown>) => sum + (parseInt(s.jumlah_pax as string) || 0), 0);
+    // Pax — ikut date filter (bukan hardcode bulan semasa)
+    const totalPax = sales.reduce((sum: number, s: Record<string, unknown>) => sum + (parseInt(s.jumlah_pax as string) || 0), 0);
     const totalLeads = leads.length;
     const closedLeads = leads.filter((l: Record<string, unknown>) => l.follow_up_status === 'Closed').length;
     const conversionRate = totalLeads > 0 ? ((closedLeads / totalLeads) * 100).toFixed(1) : '0';
-    const newLeadsThisWeek = weekLeads.length;
+    // Lead baru — kira lead yang masuk dalam 7 hari terakhir dari date range yang dipilih
+    const filterEndDate = filterEnd ? new Date(filterEnd + 'T23:59:59') : now;
+    const weekBeforeEnd = new Date(filterEndDate);
+    weekBeforeEnd.setDate(weekBeforeEnd.getDate() - 7);
+    weekBeforeEnd.setHours(0, 0, 0, 0);
+    const newLeadsThisWeek = leads.filter((l: Record<string, unknown>) => {
+      if (!l.date_lead) return false;
+      const d = new Date(l.date_lead as string);
+      return d >= weekBeforeEnd && d <= filterEndDate;
+    }).length;
 
-    // Monthly trend
-    const monthlyData: Record<string, { month: string; sales: number; leads: number }> = {};
+    // Monthly trend — guna filtered sales & leads supaya chart ikut date range
+    const monthlyData: Record<string, { month: string; sales: number; leads: number; pax: number; salesCount: number }> = {};
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
-      monthlyData[key] = { month: monthNames[d.getMonth()], sales: 0, leads: 0 };
+      monthlyData[key] = { month: monthNames[d.getMonth()], sales: 0, leads: 0, pax: 0, salesCount: 0 };
     }
-    allSales.forEach((s: Record<string, unknown>) => {
+    sales.forEach((s: Record<string, unknown>) => {
       if (s.date_closed) {
         const [year, month] = (s.date_closed as string).split('-');
         const key = `${year}-${month}`;
-        if (monthlyData[key]) monthlyData[key].sales += parseFloat(s.total as string) || 0;
+        if (monthlyData[key]) {
+          monthlyData[key].sales += parseFloat(s.total as string) || 0;
+          monthlyData[key].pax += parseInt(s.jumlah_pax as string) || 0;
+          monthlyData[key].salesCount += 1;
+        }
       }
     });
     leads.forEach((l: Record<string, unknown>) => {
@@ -188,7 +192,14 @@ export async function GET(request: NextRequest) {
         if (monthlyData[key]) monthlyData[key].leads += 1;
       }
     });
-    const salesTrend = Object.values(monthlyData);
+    // Tambah closingRate per bulan
+    const salesTrend = Object.values(monthlyData).map(m => ({
+      month: m.month,
+      sales: m.sales,
+      leads: m.leads,
+      pax: m.pax,
+      closingRate: m.leads > 0 ? parseFloat(((m.salesCount / m.leads) * 100).toFixed(1)) : 0,
+    }));
 
     // Leads by source
     const leadSources: Record<string, number> = {};

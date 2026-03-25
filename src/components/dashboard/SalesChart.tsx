@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -12,31 +13,50 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
 } from "recharts";
 
+interface TrendItem {
+  month: string;
+  sales: number;
+  leads: number;
+  pax: number;
+  closingRate: number;
+}
+
 interface SalesChartProps {
-  salesTrend: { month: string; sales: number; leads: number }[];
+  salesTrend: TrendItem[];
   paymentBreakdown: { status: string; count: number }[];
 }
+
+type TrendMode = "sales" | "leads" | "closingRate" | "pax";
+
+const TREND_MODES: { key: TrendMode; label: string; color: string; }[] = [
+  { key: "sales", label: "Jualan (RM)", color: "#10b981" },
+  { key: "leads", label: "Jumlah Lead", color: "#3b82f6" },
+  { key: "closingRate", label: "Kadar Penukaran (%)", color: "#8b5cf6" },
+  { key: "pax", label: "Jumlah Pax", color: "#f59e0b" },
+];
 
 const PAYMENT_COLORS: Record<string, string> = {
   'Full Payment': '#10b981',
   'Deposit': '#3b82f6',
+  'Second Payment': '#6b7280',
   'Pending': '#f59e0b',
   'Cancelled': '#ef4444',
 };
 
 export function SalesChart({ salesTrend, paymentBreakdown }: SalesChartProps) {
+  const [trendMode, setTrendMode] = useState<TrendMode>("sales");
+
+  const activeMode = TREND_MODES.find(m => m.key === trendMode)!;
+
   const chartConfig = {
-    sales: {
-      label: "Jualan (RM)",
-      color: "#10b981",
+    [trendMode]: {
+      label: activeMode.label,
+      color: activeMode.color,
     },
   };
 
@@ -47,48 +67,77 @@ export function SalesChart({ salesTrend, paymentBreakdown }: SalesChartProps) {
     ])
   );
 
-  const formatCurrency = (value: number) => {
-    if (value >= 1000000) return `RM${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `RM${(value / 1000).toFixed(0)}K`;
-    return `RM${value}`;
+  const formatValue = (value: number) => {
+    if (trendMode === "sales") {
+      if (value >= 1000000) return `RM${(value / 1000000).toFixed(1)}M`;
+      if (value >= 1000) return `RM${(value / 1000).toFixed(0)}K`;
+      return `RM${value}`;
+    }
+    if (trendMode === "closingRate") return `${value}%`;
+    return value.toString();
+  };
+
+  const formatTooltip = (value: number): [string, string] => {
+    if (trendMode === "sales") return [`RM ${Number(value).toLocaleString()}`, "Jualan"];
+    if (trendMode === "leads") return [value.toString(), "Lead"];
+    if (trendMode === "closingRate") return [`${value}%`, "Closing Rate"];
+    return [value.toString(), "Pax"];
   };
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card className="py-4">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold">Trend Jualan Bulanan</CardTitle>
+          <div className="flex flex-col gap-2">
+            <CardTitle className="text-base font-semibold">Trend Bulanan</CardTitle>
+            <div className="flex flex-wrap gap-1.5">
+              {TREND_MODES.map(mode => (
+                <button
+                  key={mode.key}
+                  onClick={() => setTrendMode(mode.key)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    trendMode === mode.key
+                      ? "text-white shadow-sm"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                  style={trendMode === mode.key ? { backgroundColor: mode.color } : undefined}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[250px] w-full">
             <LineChart data={salesTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis 
-                dataKey="month" 
+              <XAxis
+                dataKey="month"
                 tick={{ fontSize: 11 }}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis 
+              <YAxis
                 tick={{ fontSize: 11 }}
-                tickFormatter={formatCurrency}
+                tickFormatter={formatValue}
                 tickLine={false}
                 axisLine={false}
                 width={60}
               />
               <ChartTooltip
                 content={
-                  <ChartTooltipContent 
-                    formatter={(value) => [`RM ${Number(value).toLocaleString()}`, 'Jualan']}
+                  <ChartTooltipContent
+                    formatter={(value) => formatTooltip(Number(value))}
                   />
                 }
               />
               <Line
                 type="monotone"
-                dataKey="sales"
-                stroke="#10b981"
+                dataKey={trendMode}
+                stroke={activeMode.color}
                 strokeWidth={2}
-                dot={{ fill: "#10b981", r: 4 }}
+                dot={{ fill: activeMode.color, r: 4 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>
@@ -136,8 +185,8 @@ export function SalesChart({ salesTrend, paymentBreakdown }: SalesChartProps) {
           <div className="flex flex-wrap justify-center gap-3 mt-2">
             {paymentBreakdown.map((item) => (
               <div key={item.status} className="flex items-center gap-1.5 text-xs">
-                <div 
-                  className="w-3 h-3 rounded-sm" 
+                <div
+                  className="w-3 h-3 rounded-sm"
                   style={{ backgroundColor: PAYMENT_COLORS[item.status] || '#6b7280' }}
                 />
                 <span>{item.status}</span>

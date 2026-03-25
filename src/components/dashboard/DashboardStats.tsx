@@ -60,7 +60,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
       bgLight: "bg-amber-50",
     },
     {
-      label: "Pax Bulan Ini",
+      label: "Jumlah Pax",
       value: data.totalPax.toString(),
       icon: UserCheck,
       color: "bg-rose-500",
@@ -68,7 +68,7 @@ export function DashboardStats({ data }: DashboardStatsProps) {
       bgLight: "bg-rose-50",
     },
     {
-      label: "Lead Baru (Minggu Ini)",
+      label: "Lead Baru (7 Hari)",
       value: data.newLeadsThisWeek.toString(),
       icon: CalendarPlus,
       color: "bg-cyan-500",

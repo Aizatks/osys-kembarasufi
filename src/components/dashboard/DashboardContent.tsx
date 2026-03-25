@@ -45,7 +45,7 @@ interface DashboardData {
     newLeadsThisWeek: number;
   };
   charts: {
-    salesTrend: { month: string; sales: number; leads: number }[];
+    salesTrend: { month: string; sales: number; leads: number; pax: number; closingRate: number }[];
     leadsBySource: { source: string; count: number }[];
     paymentBreakdown: { status: string; count: number }[];
     staffStats: { name: string; sales: number; leads: number; amount: number; pax: number; closingRate: number }[];

@@ -45,10 +45,16 @@ import {
     Plus,
       Download,
       Wifi,
-      MessageSquare
+      MessageSquare,
+      KeyRound,
+      Eye,
+      EyeOff,
+      Loader2
     } from "lucide-react";
   import { Button } from "@/components/ui/button";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+  import { toast } from "sonner";
   
   export type ActiveView = "kalkulator" | "dashboard-overview" | "dashboard-sales" | "dashboard-leads" | "marketing-report" | "staff" | "quotations" | "activity-logs" | "tasks" | "task-scores" | "task-templates" | "task-custom" | "media-library"   | "creative-requests"
   | "settings"
@@ -93,6 +99,13 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
     const [isFinanceOpen, setIsFinanceOpen] = useState(activeView === "agent-reports");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [cpCurrentPassword, setCpCurrentPassword] = useState('');
+  const [cpNewPassword, setCpNewPassword] = useState('');
+  const [cpConfirmPassword, setCpConfirmPassword] = useState('');
+  const [cpLoading, setCpLoading] = useState(false);
+  const [cpShowCurrent, setCpShowCurrent] = useState(false);
+  const [cpShowNew, setCpShowNew] = useState(false);
 
   useEffect(() => {
     fetchPermissions();
@@ -118,6 +131,44 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
         }
       } catch (err) {
         console.error("Failed to fetch permissions:", err);
+      }
+    };
+
+    const handleChangePassword = async () => {
+      if (!cpNewPassword || !cpCurrentPassword) {
+        toast.error('Sila isi semua ruangan');
+        return;
+      }
+      if (cpNewPassword.length < 6) {
+        toast.error('Kata laluan baharu mestilah sekurang-kurangnya 6 aksara');
+        return;
+      }
+      if (cpNewPassword !== cpConfirmPassword) {
+        toast.error('Kata laluan baharu tidak sepadan');
+        return;
+      }
+      setCpLoading(true);
+      try {
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ currentPassword: cpCurrentPassword, newPassword: cpNewPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || 'Gagal menukar kata laluan');
+          return;
+        }
+        toast.success('Kata laluan berjaya ditukar!');
+        setShowChangePassword(false);
+        setCpCurrentPassword('');
+        setCpNewPassword('');
+        setCpConfirmPassword('');
+      } catch {
+        toast.error('Ralat rangkaian. Sila cuba lagi.');
+      } finally {
+        setCpLoading(false);
       }
     };
 
@@ -527,6 +578,27 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
+              onClick={() => setShowChangePassword(true)}
+              className={cn(
+                "text-slate-400 hover:text-white hover:bg-slate-700/50",
+                isCollapsed ? "w-full justify-center px-0" : "w-full justify-start"
+              )}
+            >
+              <KeyRound className="w-5 h-5" />
+              {!isCollapsed && <span className="ml-2">Tukar Kata Laluan</span>}
+            </Button>
+          </TooltipTrigger>
+          {isCollapsed && (
+            <TooltipContent side="right" className="bg-slate-900 text-white border-slate-700">
+              Tukar Kata Laluan
+            </TooltipContent>
+          )}
+        </Tooltip>
+
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
               onClick={logout}
               className={cn(
                 "text-slate-400 hover:text-white hover:bg-slate-700/50",
@@ -593,6 +665,83 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
       )}>
         <SidebarContent />
       </aside>
+
+      <Dialog open={showChangePassword} onOpenChange={(open) => {
+        setShowChangePassword(open);
+        if (!open) { setCpCurrentPassword(''); setCpNewPassword(''); setCpConfirmPassword(''); setCpShowCurrent(false); setCpShowNew(false); }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-blue-500" />
+              Tukar Kata Laluan
+            </DialogTitle>
+            <DialogDescription>Masukkan kata laluan semasa dan kata laluan baharu anda.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Kata Laluan Semasa</label>
+              <div className="relative">
+                <input
+                  type={cpShowCurrent ? 'text' : 'password'}
+                  value={cpCurrentPassword}
+                  onChange={(e) => setCpCurrentPassword(e.target.value)}
+                  placeholder="Masukkan kata laluan semasa"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button type="button" onClick={() => setCpShowCurrent(!cpShowCurrent)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {cpShowCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Kata Laluan Baharu</label>
+              <div className="relative">
+                <input
+                  type={cpShowNew ? 'text' : 'password'}
+                  value={cpNewPassword}
+                  onChange={(e) => setCpNewPassword(e.target.value)}
+                  placeholder="Minimum 6 aksara"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button type="button" onClick={() => setCpShowNew(!cpShowNew)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {cpShowNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Sahkan Kata Laluan Baharu</label>
+              <input
+                type="password"
+                value={cpConfirmPassword}
+                onChange={(e) => setCpConfirmPassword(e.target.value)}
+                placeholder="Masukkan semula kata laluan baharu"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {cpConfirmPassword && cpNewPassword !== cpConfirmPassword && (
+                <p className="text-xs text-red-500 mt-1">Kata laluan tidak sepadan</p>
+              )}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowChangePassword(false)}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={cpLoading || !cpCurrentPassword || !cpNewPassword || cpNewPassword !== cpConfirmPassword}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {cpLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Tukar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }
