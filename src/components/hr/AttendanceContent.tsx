@@ -199,11 +199,46 @@ export function AttendanceContent() {
   // ── CAMERA ──
 
   const startCamera = async () => {
+    // Check if mediaDevices available (requires HTTPS on mobile)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error("Kamera tidak disokong. Pastikan anda menggunakan HTTPS.");
+      return;
+    }
+
     setCapturing(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-      if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch { toast.error("Gagal akses kamera"); setCapturing(false); }
+      let stream: MediaStream;
+      try {
+        // Try front camera first
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+      } catch {
+        // Fallback: any available camera (some mobile devices need this)
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute("muted", "");
+        videoRef.current.setAttribute("playsinline", "");
+        // Force play on mobile (some browsers need explicit play call)
+        try { await videoRef.current.play(); } catch {}
+      }
+    } catch (err: any) {
+      setCapturing(false);
+      if (err?.name === "NotAllowedError") {
+        toast.error("Kebenaran kamera ditolak. Sila benarkan akses kamera dalam tetapan pelayar.");
+      } else if (err?.name === "NotFoundError") {
+        toast.error("Tiada kamera ditemui pada peranti ini.");
+      } else if (err?.name === "NotReadableError") {
+        toast.error("Kamera sedang digunakan oleh aplikasi lain. Sila tutup dan cuba semula.");
+      } else {
+        toast.error("Gagal akses kamera. Pastikan pelayar mempunyai kebenaran kamera.");
+      }
+      console.error("Camera error:", err);
+    }
   };
 
   const capturePhoto = () => {
@@ -469,7 +504,7 @@ export function AttendanceContent() {
                   {selfie ? (
                     <img src={selfie} className="w-full h-full object-cover" alt="Selfie" />
                   ) : capturing ? (
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
                   ) : (
                     <div className="text-center space-y-2">
                       <Camera className="w-12 h-12 mx-auto text-slate-400" />

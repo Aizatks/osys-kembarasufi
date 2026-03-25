@@ -230,15 +230,6 @@ export function LeadReportTab() {
     });
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      const allIds = new Set(filteredReports.map(r => r.id));
-      setSelectedIds(allIds);
-    } else {
-      setSelectedIds(new Set());
-    }
-  };
-
   const handleSelectOne = (id: string, checked: boolean) => {
     const newSelected = new Set(selectedIds);
     if (checked) {
@@ -251,54 +242,56 @@ export function LeadReportTab() {
 
 const handleBulkDelete = async () => {
       if (selectedIds.size === 0) return;
-      
+
       setBulkDeleteLoading(true);
       try {
         const token = localStorage.getItem("auth_token");
         const allIds = Array.from(selectedIds);
-        const BATCH_SIZE = 1000;
+        const BATCH_SIZE = 200;
         let totalDeleted = 0;
-        
-        toast.info(`Memadam ${allIds.length} rekod... Sila tunggu`);
-      
-      // Delete in batches to avoid timeout
+
+        toast.info(`Memadam ${allIds.length} rekod... Sila tunggu`, { id: "bulk-delete-progress" });
+
       for (let i = 0; i < allIds.length; i += BATCH_SIZE) {
         const batchIds = allIds.slice(i, i + BATCH_SIZE);
-        
-        const res = await fetch(`/api/lead-reports`, { 
-          method: "DELETE",
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ ids: batchIds }),
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          totalDeleted += data.deleted || batchIds.length;
-        } else {
-          const err = await res.json();
-          toast.error(err.error || `Gagal memadam batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        try {
+          const res = await fetch(`/api/lead-reports`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ ids: batchIds }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json();
+            totalDeleted += data.deleted || batchIds.length;
+          } else {
+            const err = await res.json();
+            toast.error(err.error || `Gagal memadam batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+          }
+        } catch (fetchErr) {
+          clearTimeout(timeoutId);
+          console.error("Batch delete fetch error:", fetchErr);
         }
-        
-        // Update progress
-        if (allIds.length > BATCH_SIZE) {
-          const progress = Math.min(100, Math.round(((i + BATCH_SIZE) / allIds.length) * 100));
-          toast.info(`Progress: ${progress}%`, { id: "bulk-delete-progress" });
-        }
+
+        const progress = Math.min(100, Math.round(((i + BATCH_SIZE) / allIds.length) * 100));
+        toast.info(`Memadam... ${progress}% (${Math.min(i + BATCH_SIZE, allIds.length)}/${allIds.length})`, { id: "bulk-delete-progress" });
       }
-      
+
       toast.dismiss("bulk-delete-progress");
       toast.success(`${totalDeleted} rekod berjaya dipadam`);
       setSelectedIds(new Set());
       fetchReports();
     } catch (error: unknown) {
-      if (error instanceof Error && error.name === "AbortError") {
-        toast.error("Timeout - Cuba padam dalam batch yang lebih kecil");
-      } else {
-        toast.error("Ralat semasa memadam");
-      }
+      toast.error("Ralat semasa memadam");
     } finally {
       setBulkDeleteLoading(false);
     }
@@ -600,17 +593,30 @@ const handleBulkDelete = async () => {
     return hasNoFollowUp && isOlderThan3Days;
   }).length;
   const duplicateCount = reports.filter(r => r.is_duplicate).length;
-  const isAllSelected = filteredReports.length > 0 && selectedIds.size === filteredReports.length;
-  const isSomeSelected = selectedIds.size > 0 && selectedIds.size < filteredReports.length;
-
   const totalPages = pageSize === 0 ? 1 : Math.ceil(sortedReports.length / pageSize);
-  const paginatedReports = pageSize === 0 
-    ? sortedReports 
+  const paginatedReports = pageSize === 0
+    ? sortedReports
     : sortedReports.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(paginatedReports.map(r => r.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const isAllPageSelected = paginatedReports.length > 0 && paginatedReports.every(r => selectedIds.has(r.id));
+  const isSomeSelected = selectedIds.size > 0 && !isAllPageSelected;
 
   useEffect(() => {
     setCurrentPage(1);
   }, [pageSize, dateRange.from, dateRange.to, selectedStaff, hideDuplicates, searchQuery, filterLeadFrom, filterFollowUp]);
+
+  // Clear selections when page changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -1051,7 +1057,7 @@ const handleBulkDelete = async () => {
                     <TableRow className="bg-gray-50">
                       <TableHead className="w-[50px]">
                         <Checkbox
-                          checked={isAllSelected}
+                          checked={isAllPageSelected}
                           onCheckedChange={handleSelectAll}
                           aria-label="Pilih semua"
                           className={isSomeSelected ? "data-[state=checked]:bg-blue-600" : ""}

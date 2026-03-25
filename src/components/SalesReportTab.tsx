@@ -390,14 +390,6 @@ export function SalesReportTab() {
     }
   };
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === filteredReports.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredReports.map(r => r.id)));
-    }
-  };
-
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
@@ -410,52 +402,56 @@ export function SalesReportTab() {
 
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    
+
     setIsBulkDeleting(true);
     try {
       const token = localStorage.getItem("auth_token");
       const allIds = Array.from(selectedIds);
-      const BATCH_SIZE = 1000;
+      const BATCH_SIZE = 200;
       let totalDeleted = 0;
-      
-      toast.info(`Memadam ${allIds.length} rekod... Sila tunggu`);
-      
+
+      toast.info(`Memadam ${allIds.length} rekod... Sila tunggu`, { id: "bulk-delete-progress" });
+
       for (let i = 0; i < allIds.length; i += BATCH_SIZE) {
         const batchIds = allIds.slice(i, i + BATCH_SIZE);
-        
-        const res = await fetch(`/api/sales-reports`, { 
-          method: "DELETE",
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ ids: batchIds }),
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          totalDeleted += data.deleted || batchIds.length;
-        } else {
-          const err = await res.json();
-          toast.error(err.error || `Gagal memadam batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        try {
+          const res = await fetch(`/api/sales-reports`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ ids: batchIds }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json();
+            totalDeleted += data.deleted || batchIds.length;
+          } else {
+            const err = await res.json();
+            toast.error(err.error || `Gagal memadam batch ${Math.floor(i / BATCH_SIZE) + 1}`);
+          }
+        } catch (fetchErr) {
+          clearTimeout(timeoutId);
+          console.error("Batch delete fetch error:", fetchErr);
         }
-        
-        if (allIds.length > BATCH_SIZE) {
-          const progress = Math.min(100, Math.round(((i + BATCH_SIZE) / allIds.length) * 100));
-          toast.info(`Progress: ${progress}%`, { id: "bulk-delete-progress" });
-        }
+
+        const progress = Math.min(100, Math.round(((i + BATCH_SIZE) / allIds.length) * 100));
+        toast.info(`Memadam... ${progress}% (${Math.min(i + BATCH_SIZE, allIds.length)}/${allIds.length})`, { id: "bulk-delete-progress" });
       }
-      
+
       toast.dismiss("bulk-delete-progress");
       toast.success(`${totalDeleted} rekod berjaya dipadam`);
       setSelectedIds(new Set());
       fetchReports();
     } catch (error: unknown) {
-      if (error instanceof Error && error.name === "AbortError") {
-        toast.error("Timeout - Cuba padam dalam batch yang lebih kecil");
-      } else {
-        toast.error("Ralat semasa memadam");
-      }
+      toast.error("Ralat semasa memadam");
     } finally {
       setIsBulkDeleting(false);
     }
@@ -644,13 +640,27 @@ export function SalesReportTab() {
   const sortedReports = sortReports(filteredReports);
 
   const totalPages = pageSize === 0 ? 1 : Math.ceil(sortedReports.length / pageSize);
-  const paginatedReports = pageSize === 0 
-    ? sortedReports 
+  const paginatedReports = pageSize === 0
+    ? sortedReports
     : sortedReports.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const toggleSelectAll = () => {
+    const allPageSelected = paginatedReports.length > 0 && paginatedReports.every(r => selectedIds.has(r.id));
+    if (allPageSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedReports.map(r => r.id)));
+    }
+  };
 
   useEffect(() => {
     setCurrentPage(1);
   }, [pageSize, dateRange.from, dateRange.to, selectedStaff, searchQuery, filterStatus]);
+
+  // Clear selections when page changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -1146,7 +1156,7 @@ export function SalesReportTab() {
                   <TableRow className="bg-gray-50">
                     <TableHead className="w-[50px]">
                       <Checkbox 
-                        checked={selectedIds.size === filteredReports.length && filteredReports.length > 0}
+                        checked={paginatedReports.length > 0 && paginatedReports.every(r => selectedIds.has(r.id))}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>

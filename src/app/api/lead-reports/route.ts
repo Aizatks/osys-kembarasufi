@@ -274,7 +274,7 @@ export async function DELETE(request: NextRequest) {
       }
       
       // Delete in smaller batches to avoid query limits
-        const batchSize = 1000;
+        const batchSize = 200;
         let totalDeleted = 0;
         
         for (let i = 0; i < idArray.length; i += batchSize) {
