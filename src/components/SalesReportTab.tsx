@@ -38,15 +38,13 @@ interface SalesReport {
 interface Staff {
   id: string;
   name: string;
+  status?: string;
+  is_sales?: boolean;
 }
 
 type SortField = "no_phone" | "nama_pakej" | "date_closed" | "tarikh_trip" | "jumlah_pax" | "total" | "paid" | "status_bayaran" | "nama_wakil_peserta" | "staff";
 type SortDirection = "asc" | "desc" | null;
 
-const ALLOWED_STAFF_NAMES = [
-  "Hazirah", "Haini", "Farah", "Ammar", 
-  "Alieya", "Airienna", "Sarah", "Diyana", "Arina"
-];
 
 const MONTHS = [
   "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
@@ -140,12 +138,7 @@ export function SalesReportTab() {
       });
       const data = await res.json();
       if (data.staff) {
-        const filteredStaff = data.staff.filter((s: Staff) => 
-          ALLOWED_STAFF_NAMES.some(name => 
-            s.name.toLowerCase().includes(name.toLowerCase())
-          )
-        );
-        setStaffList(filteredStaff);
+        setStaffList(data.staff.filter((s: Staff) => s.status === 'approved' && s.is_sales));
       }
     } catch (error) {
       console.error("Failed to fetch staff list");

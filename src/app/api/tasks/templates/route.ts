@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, category, target_role, points, is_mandatory, sort_order, indicator_type, weightage, attachment_requirement, frequency_days } = body;
+    const { title, description, category, target_role, target_staff_ids, points, is_mandatory, sort_order, indicator_type, weightage, attachment_requirement, frequency_days } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'Tajuk diperlukan' }, { status: 400 });
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       description: description || null,
       category: category || 'daily',
       target_role: target_role || null,
+      target_staff_ids: target_staff_ids || null,
       points: points || 1,
       is_mandatory: is_mandatory || false,
       sort_order: sort_order || 0,
@@ -101,9 +102,10 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    // If frequency_days caused error (column doesn't exist), retry without it
-    if (error && error.message?.includes('frequency_days')) {
-      delete insertData.frequency_days;
+    // If column doesn't exist, retry without it
+    if (error) {
+      if (error.message?.includes('target_staff_ids')) delete insertData.target_staff_ids;
+      if (error.message?.includes('frequency_days')) delete insertData.frequency_days;
       const retry = await supabase.from('task_templates').insert(insertData).select().single();
       data = retry.data;
       error = retry.error;
@@ -136,7 +138,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, title, description, category, target_role, points, is_mandatory, sort_order, is_active, indicator_type, weightage, attachment_requirement, frequency_days } = body;
+    const { id, title, description, category, target_role, target_staff_ids, points, is_mandatory, sort_order, is_active, indicator_type, weightage, attachment_requirement, frequency_days } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
@@ -150,6 +152,7 @@ export async function PUT(request: NextRequest) {
     if (description !== undefined) updateData.description = description;
     if (category !== undefined) updateData.category = category;
     if (target_role !== undefined) updateData.target_role = target_role;
+    if (target_staff_ids !== undefined) updateData.target_staff_ids = target_staff_ids;
     if (points !== undefined) updateData.points = points;
     if (is_mandatory !== undefined) updateData.is_mandatory = is_mandatory;
     if (sort_order !== undefined) updateData.sort_order = sort_order;
@@ -166,9 +169,10 @@ export async function PUT(request: NextRequest) {
       .select()
       .single();
 
-    // If frequency_days caused error (column doesn't exist), retry without it
-    if (error && error.message?.includes('frequency_days')) {
-      delete updateData.frequency_days;
+    // If column doesn't exist, retry without it
+    if (error) {
+      if (error.message?.includes('target_staff_ids')) delete updateData.target_staff_ids;
+      if (error.message?.includes('frequency_days')) delete updateData.frequency_days;
       const retry = await supabase.from('task_templates').update(updateData).eq('id', id).select().single();
       data = retry.data;
       error = retry.error;

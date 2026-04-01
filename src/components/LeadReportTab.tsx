@@ -120,15 +120,13 @@ interface LeadReport {
 interface Staff {
   id: string;
   name: string;
+  status?: string;
+  is_sales?: boolean;
 }
 
 type SortField = "nama_pakej" | "date_lead" | "no_phone" | "lead_from" | "follow_up_status" | "date_follow_up" | "staff";
 type SortDirection = "asc" | "desc" | null;
 
-const ALLOWED_STAFF_NAMES = [
-  "Hazirah", "Haini", "Farah", "Ammar", 
-  "Alieya", "Airienna", "Sarah", "Diyana", "Arina"
-];
 
 const MONTHS = [
   "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
@@ -207,12 +205,7 @@ export function LeadReportTab() {
       });
       const data = await res.json();
       if (data.staff) {
-        const filteredStaff = data.staff.filter((s: Staff) => 
-          ALLOWED_STAFF_NAMES.some(name => 
-            s.name.toLowerCase().includes(name.toLowerCase())
-          )
-        );
-        setStaffList(filteredStaff);
+        setStaffList(data.staff.filter((s: Staff) => s.status === 'approved' && s.is_sales));
       }
     } catch (error) {
       console.error("Failed to fetch staff list");
