@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, ADMIN_ROLES } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     if (!token) return NextResponse.json({ error: 'Tidak dibenarkan' }, { status: 401 });
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 

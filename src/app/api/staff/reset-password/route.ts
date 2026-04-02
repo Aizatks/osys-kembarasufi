@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken, hashPassword } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, hashPassword, ADMIN_ROLES } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-logger';
 
 function generateRandomPassword(length: number = 8): string {
   const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -62,7 +63,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
+    logActivity({
+      staffId: payload.userId, staffName: payload.name, staffEmail: payload.email,
+      action: 'reset_password',
+      description: `Reset password untuk ${staff.name}`,
+      metadata: { targetStaffId: staffId, targetStaffName: staff.name },
+    });
+
+    return NextResponse.json({
       message: 'Password berjaya di-reset',
       newPassword: passwordToSet,
       staffName: staff.name

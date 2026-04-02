@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, isAdminRole } from '@/lib/auth';
 
 // Map nama bulan Malay/English → index bulan (0-based)
 const MONTH_MAP: Record<string, number> = {
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token tidak sah' }, { status: 401 });
     }
 
-    const isAdminOrSuperAdmin = ['admin', 'superadmin'].includes(payload.role);
+    const isAdminOrSuperAdmin = isAdminRole(payload.role);
     if (!isAdminOrSuperAdmin) {
       return NextResponse.json({ error: 'Akses ditolak. Dashboard hanya untuk Admin.' }, { status: 403 });
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, ADMIN_ROLES } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -116,6 +117,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message || 'Ralat sistem' }, { status: 500 });
     }
 
+    logActivity({
+      staffId: payload.userId, staffName: payload.name, staffEmail: payload.email,
+      action: 'create_task_template',
+      description: `Tambah template: ${title}`,
+      metadata: { templateId: data.id, title, category: category || 'daily' },
+    });
+
     return NextResponse.json({ template: data, message: 'Template berjaya dicipta' });
   } catch (error) {
     console.error('Create template error:', error);
@@ -133,7 +141,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -183,6 +191,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: error.message || 'Ralat sistem' }, { status: 500 });
     }
 
+    logActivity({
+      staffId: payload.userId, staffName: payload.name, staffEmail: payload.email,
+      action: 'update_task_template',
+      description: `Kemaskini template ID: ${id}${title ? ` - ${title}` : ''}`,
+      metadata: { templateId: id, changes: Object.keys(updateData) },
+    });
+
     return NextResponse.json({ template: data, message: 'Template berjaya dikemaskini' });
   } catch (error) {
     console.error('Update template error:', error);
@@ -200,7 +215,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -220,6 +235,13 @@ export async function DELETE(request: NextRequest) {
       console.error('Delete template error:', error);
       return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
     }
+
+    logActivity({
+      staffId: payload.userId, staffName: payload.name, staffEmail: payload.email,
+      action: 'delete_task_template',
+      description: `Padam template ID: ${id}`,
+      metadata: { templateId: id },
+    });
 
     return NextResponse.json({ message: 'Template berjaya dipadam' });
   } catch (error) {

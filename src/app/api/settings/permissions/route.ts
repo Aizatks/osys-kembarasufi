@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { verify } from 'jsonwebtoken';
+import { logActivity } from '@/lib/activity-logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -50,6 +51,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    logActivity({
+      staffId: decoded.userId, staffName: decoded.name, staffEmail: decoded.email,
+      action: 'update_rbac_permission',
+      description: `RBAC: ${role} → ${viewId} = ${isEnabled ? 'ON' : 'OFF'}`,
+      metadata: { role, viewId, isEnabled },
+    });
 
     return NextResponse.json({ permission: data });
   } catch (error) {

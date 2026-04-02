@@ -37,6 +37,18 @@ export function verifyToken(token: string): JWTPayload | null {
   }
 }
 
+// Central admin roles list — used by all APIs for authorization checks
+export const ADMIN_ROLES = [
+  'admin', 'superadmin', 'pengurus', 'c-suite',
+  'sales-marketing-manager', 'asst-sales-marketing-manager',
+  'admin-manager', 'hr-manager', 'finance-manager',
+  'tour-coordinator-manager',
+];
+
+export function isAdminRole(role: string): boolean {
+  return ADMIN_ROLES.includes(role);
+}
+
 export function extractTokenFromHeader(authHeader: string | null): string | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;

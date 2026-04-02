@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, ADMIN_ROLES } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-logger';
 
 function formatDateLocal(date: Date): string {
   return date.toISOString().split('T')[0];
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     if (!token) return NextResponse.json({ error: 'Tidak dibenarkan' }, { status: 401 });
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -157,6 +158,13 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    logActivity({
+      staffId: payload.userId, staffName: payload.name, staffEmail: payload.email,
+      action: 'generate_tasks',
+      description: `Jana ${totalGenerated} task (${category}) untuk ${staffList.length} staff: ${start_date} → ${end_date}`,
+      metadata: { category, start_date, end_date, totalGenerated, staffCount: staffList.length },
+    });
 
     return NextResponse.json({
       message: `Berjaya generate ${totalGenerated} task untuk ${staffList.length} staff`,

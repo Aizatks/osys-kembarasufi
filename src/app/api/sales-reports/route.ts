@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+import { logActivity } from "@/lib/activity-logger";
 
 function getSupabase() {
   return createClient(
@@ -169,6 +170,13 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    logActivity({
+      staffId: staff.id, staffName: staff.name, staffEmail: staff.email,
+      action: 'create_sales_report',
+      description: `Tambah jualan: ${body.nama_pakej || ''} - RM${body.total || 0}`,
+      metadata: { reportId: data?.id, pakej: body.nama_pakej, total: body.total },
+    });
 
     return NextResponse.json({ data });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, isAdminRole } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-logger';
 
 interface TaskTemplate {
   id: string;
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
     const staffIdParam = searchParams.get('staff_id');
     const category = searchParams.get('category') || 'daily';
 
-    const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+    const isAdmin = isAdminRole(payload.role);
     const staffId = isAdmin && staffIdParam ? staffIdParam : payload.userId;
 
     const { data: staff } = await supabase
@@ -249,7 +250,7 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Task tidak dijumpai' }, { status: 404 });
       }
 
-      const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+      const isAdmin = isAdminRole(payload.role);
       if (!isAdmin && task.staff_id !== payload.userId) {
         return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
       }
@@ -290,9 +291,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      task: data, 
-      message: is_completed ? 'Task selesai!' : 'Task dikemaskini' 
+    if (is_completed !== undefined) {
+      logActivity({
+        staffId: payload.userId, staffName: payload.name, staffEmail: payload.email,
+        action: is_completed ? 'complete_task' : 'uncomplete_task',
+        description: `${is_completed ? 'Selesai' : 'Batal'} task: ${task.template?.title || id}`,
+        metadata: { taskId: id, taskDate: task.task_date, templateTitle: task.template?.title },
+      });
+    }
+
+    return NextResponse.json({
+      task: data,
+      message: is_completed ? 'Task selesai!' : 'Task dikemaskini'
     });
   } catch (error) {
     console.error('Update task error:', error);
@@ -321,7 +331,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tajuk diperlukan' }, { status: 400 });
     }
 
-    const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+    const isAdmin = isAdminRole(payload.role);
     const targetStaffId = isAdmin && staff_id ? staff_id : payload.userId;
 
     const { data, error } = await supabase
@@ -383,7 +393,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Tidak boleh padam task template' }, { status: 400 });
     }
 
-    const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+    const isAdmin = isAdminRole(payload.role);
     if (!isAdmin && task.staff_id !== payload.userId) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }

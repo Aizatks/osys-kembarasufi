@@ -130,9 +130,10 @@ export function DashboardContent() {
     fetchPermissions();
   }, [fetchDashboard, fetchPermissions]);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const ADMIN_ROLES_LOCAL = ['admin', 'superadmin', 'pengurus', 'c-suite', 'sales-marketing-manager', 'asst-sales-marketing-manager', 'admin-manager', 'hr-manager', 'finance-manager', 'tour-coordinator-manager'];
+  const isAdmin = ADMIN_ROLES_LOCAL.includes(user?.role || '');
   const isSuperAdmin = user?.role === 'superadmin';
-  const isMarketing = user?.role === 'marketing';
+  const isMarketing = user?.role === 'marketing' || user?.role === 'sales-marketing-manager' || user?.role === 'asst-sales-marketing-manager';
   
   const canViewAllStaff = isSuperAdmin || permissions.some(
     p => p.role === user?.role && p.view_id === 'view-all-staff' && p.is_enabled

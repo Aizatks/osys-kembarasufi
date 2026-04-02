@@ -14,27 +14,27 @@ interface Permission {
 }
 
 const ROLES = [
-  "admin", 
-  "superadmin",
-  "c-suite", 
-  "pengurus", 
-  "staff", 
-  "marketing", 
-  "finance",
-  "hr",
-  "media-videographic",
-  "tour-coordinator", 
-  "ejen",
-  "introducer",
-  "admin-manager",
-  "hr-manager",
-  "finance-manager",
-  "tour-coordinator-manager",
-  "sales-marketing-manager",
-  "asst-sales-marketing-manager",
-  "operation",
-  "b2b",
-  "intern"
+  { id: "staff", label: "Sales" },
+  { id: "admin", label: "Admin" },
+  { id: "superadmin", label: "Superadmin" },
+  { id: "c-suite", label: "C-Suite" },
+  { id: "pengurus", label: "Pengurus" },
+  { id: "marketing", label: "Marketing" },
+  { id: "finance", label: "Finance" },
+  { id: "hr", label: "HR" },
+  { id: "media-videographic", label: "Media/Video" },
+  { id: "tour-coordinator", label: "PIC" },
+  { id: "ejen", label: "Ejen" },
+  { id: "b2b", label: "B2B" },
+  { id: "introducer", label: "Introducer" },
+  { id: "admin-manager", label: "Admin Manager" },
+  { id: "hr-manager", label: "HR Manager" },
+  { id: "finance-manager", label: "Finance Manager" },
+  { id: "tour-coordinator-manager", label: "TC Manager" },
+  { id: "sales-marketing-manager", label: "S&M Manager" },
+  { id: "asst-sales-marketing-manager", label: "Asst. S&M Manager" },
+  { id: "operation", label: "Operation" },
+  { id: "intern", label: "Intern" },
 ];
 const VIEWS = [
     { id: "dashboard-overview", label: "Dashboard Overview" },
@@ -177,8 +177,8 @@ export function SettingsContent() {
                   <tr className="border-b dark:border-slate-700">
                     <th className="text-left py-4 px-4 font-medium text-slate-500 dark:text-slate-400">Bahagian / View</th>
                     {ROLES.map(role => (
-                      <th key={role} className="text-center py-4 px-4 font-medium text-slate-500 dark:text-slate-400 capitalize">
-                        {role}
+                      <th key={role.id} className="text-center py-4 px-4 font-medium text-slate-500 dark:text-slate-400 text-xs whitespace-nowrap">
+                        {role.label}
                       </th>
                     ))}
                   </tr>
@@ -191,14 +191,14 @@ export function SettingsContent() {
                         <p className="text-xs text-slate-400">{view.id}</p>
                       </td>
                       {ROLES.map(role => {
-                        const active = isEnabled(role, view.id);
-                        const key = `${role}-${view.id}`;
+                        const active = isEnabled(role.id, view.id);
+                        const key = `${role.id}-${view.id}`;
                         const isSaving = saving === key;
 
                         return (
-                          <td key={role} className="py-4 px-4 text-center">
+                          <td key={role.id} className="py-4 px-4 text-center">
                             <button
-                              onClick={() => togglePermission(role, view.id)}
+                              onClick={() => togglePermission(role.id, view.id)}
                               disabled={isSaving}
                               className={`
                                 w-10 h-10 rounded-xl flex items-center justify-center mx-auto transition-all

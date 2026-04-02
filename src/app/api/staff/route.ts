@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, ADMIN_ROLES } from '@/lib/auth';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -51,7 +52,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'superadmin'].includes(payload.role)) {
+    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -118,6 +119,21 @@ export async function PUT(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
+    }
+
+    // Log the activity
+    const actionMap: Record<string, 'approve_staff' | 'reject_staff' | 'change_role' | 'revoke_staff' | 'reactivate_staff'> = {
+      approve: 'approve_staff', reject: 'reject_staff', changeRole: 'change_role',
+      revoke: 'revoke_staff', reactivate: 'reactivate_staff',
+    };
+    const logAction = actionMap[action];
+    if (logAction) {
+      logActivity({
+        staffId: payload.userId, staffName: payload.name, staffEmail: payload.email,
+        action: logAction,
+        description: `${action} staff ${staffId}${role ? ` → ${role}` : ''}`,
+        metadata: { targetStaffId: staffId, role },
+      });
     }
 
     return NextResponse.json({ message: 'Berjaya dikemaskini' });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, isAdminRole } from '@/lib/auth';
 
 function formatDateLocal(date: Date): string {
   return date.toISOString().split('T')[0];
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
       const endDateOverride = searchParams.get('end_date');
       const categoryFilter = searchParams.get('category');
 
-    const isAdmin = ['admin', 'superadmin', 'pengurus', 'c-suite'].includes(payload.role);
+    const isAdmin = isAdminRole(payload.role);
 
     if (period === 'yearly' && year) {
       const yearNum = parseInt(year);

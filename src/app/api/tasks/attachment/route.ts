@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, isAdminRole } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
       if (!task) return NextResponse.json({ error: 'Task tidak dijumpai' }, { status: 404 });
 
-      const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+      const isAdmin = isAdminRole(payload.role);
       if (!isAdmin && task.staff_id !== payload.userId) {
         return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
       }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
       if (!task) return NextResponse.json({ error: 'Task tidak dijumpai' }, { status: 404 });
 
-      const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+      const isAdmin = isAdminRole(payload.role);
       if (!isAdmin && task.staff_id !== payload.userId) {
         return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
       }
@@ -129,7 +129,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!task) return NextResponse.json({ error: 'Task tidak dijumpai' }, { status: 404 });
 
-    const isAdmin = ['admin', 'superadmin'].includes(payload.role);
+    const isAdmin = isAdminRole(payload.role);
     if (!isAdmin && task.staff_id !== payload.userId) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
