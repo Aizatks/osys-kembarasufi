@@ -168,22 +168,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-    const isAdmin = user?.role === 'admin' || 
-                    user?.role === 'superadmin' || 
-                    user?.role === 'c-suite' || 
+    const isAdmin = user?.role === 'admin' ||
+                    user?.role === 'superadmin' ||
+                    user?.role === 'c-suite' ||
                     user?.role === 'pengurus' ||
                     user?.role === 'sales-marketing-manager' ||
+                    user?.role === 'asst-sales-marketing-manager' ||
                     user?.role === 'admin-manager' ||
                     user?.role === 'hr-manager' ||
                     user?.role === 'finance-manager' ||
                     user?.role === 'tour-coordinator-manager';
     const isSuperAdmin = user?.role === 'superadmin';
-    const isMarketing = user?.role === 'marketing' || user?.role === 'sales-marketing-manager';
+    const isMarketing = user?.role === 'marketing' || user?.role === 'sales-marketing-manager' || user?.role === 'asst-sales-marketing-manager';
     const isMedia = isAdmin || isMarketing || user?.role === 'media-videographic';
     const isVideoGraphic = isAdmin || isMarketing || user?.role === 'media-videographic';
     const isFinance = isAdmin || user?.role === 'finance' || user?.role === 'finance-manager';
     const isHR = isAdmin || user?.role === 'hr' || user?.role === 'hr-manager';
-    const isSales = user?.role === 'staff' || user?.role === 'ejen' || user?.role === 'sales-marketing-manager' || user?.role === 'marketing';
+    const isSales = user?.role === 'staff' || user?.role === 'ejen' || user?.role === 'sales-marketing-manager' || user?.role === 'asst-sales-marketing-manager' || user?.role === 'marketing';
     const isAgent = user?.role === 'ejen' || user?.role === 'introducer';
     const isStaff = user?.role !== 'ejen' && user?.role !== 'introducer' && !!user?.role;
     const isImpersonating = !!user?.impersonatedBy;

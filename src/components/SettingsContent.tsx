@@ -31,6 +31,7 @@ const ROLES = [
   "finance-manager",
   "tour-coordinator-manager",
   "sales-marketing-manager",
+  "asst-sales-marketing-manager",
   "operation",
   "b2b",
   "intern"
