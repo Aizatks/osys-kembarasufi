@@ -1,0 +1,77 @@
+   ▲ Next.js 15.3.8 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://172.20.0.40:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 832ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbo
+
+ ○ Compiling / ...
+ ✓ Compiled / in 5.3s
+ GET / 200 in 5743ms
+ GET /?_cb=1775098926743 200 in 110ms
+ GET / 200 in 82ms
+ GET /?_cb=1775099272375 200 in 73ms
+ GET /?_cb=1775099358407 200 in 84ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 744ms
+ GET /login 200 in 767ms
+ GET /login?_cb=1775099358407 200 in 75ms
+ GET /login?_cb=1775099381231 200 in 46ms
+ GET /login?_cb=1775099382323 200 in 43ms
+ GET /login?_cb=1775099383496 200 in 40ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 618ms
+ POST /api/auth/login 200 in 1005ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 516ms
+ GET /admin 200 in 535ms
+ GET /admin?_cb=1775099383496 200 in 97ms
+ GET / 200 in 99ms
+ GET /admin?_cb=1775099470720 200 in 32ms
+ GET / 200 in 62ms
+ GET /admin?_cb=1775099471500 200 in 36ms
+ GET /admin?_cb=1775099472221 200 in 31ms
+ GET / 200 in 70ms
+ ✓ Compiled /api/auth/me in 435ms
+ GET /api/auth/me 200 in 557ms
+ GET /?_cb=1775099472221 200 in 121ms
+ ✓ Compiled /api/settings/permissions in 409ms
+ GET /api/settings/permissions 200 in 545ms
+ GET /api/settings/permissions 200 in 54ms
+ GET /?_cb=1775099488825 200 in 75ms
+ GET /api/settings/permissions 200 in 59ms
+ GET /?_cb=1775099490039 200 in 69ms
+ GET /?_cb=1775099491267 200 in 66ms
+ GET /api/auth/me 200 in 122ms
+ GET /api/settings/permissions 200 in 75ms
+ GET /api/settings/permissions 200 in 73ms
+ ✓ Compiled /api/hr/branches in 442ms
+ GET /api/hr/branches 200 in 602ms
+ GET /?_cb=1775100170207 200 in 101ms
+ GET /?_cb=1775100173060 200 in 83ms
+ GET /?_cb=1775100175285 200 in 77ms
+ GET /?_cb=1775100176550 200 in 65ms
+ GET /api/auth/me 200 in 206ms
+ GET /api/settings/permissions 200 in 82ms
+ GET /api/settings/permissions 200 in 58ms
+ ✓ Compiled /api/hr/attendance in 393ms
+ GET /api/hr/attendance?staff_id=ec380579-9974-449b-85de-948f2b1aaa28 200 in 678ms
+ GET /api/hr/attendance?staff_id=ec380579-9974-449b-85de-948f2b1aaa28 200 in 142ms
+ GET /api/hr/branches 200 in 189ms
+ PATCH /api/hr/branches 200 in 166ms
+ GET /api/hr/branches 200 in 52ms
+ POST /api/hr/attendance 200 in 500ms
+ GET /api/hr/attendance?staff_id=ec380579-9974-449b-85de-948f2b1aaa28 200 in 85ms
+ GET /api/hr/attendance?all=true&start_date=2026-03-02&end_date=2026-04-02 200 in 504ms
+ GET /api/hr/attendance?staff_id=ec380579-9974-449b-85de-948f2b1aaa28&start_date=2026-03-26&end_date=2026-04-02 200 in 88ms
+ GET /api/hr/attendance?all=true&start_date=2026-03-02&end_date=2026-04-02 200 in 408ms
+ GET /api/hr/attendance?all=true&start_date=2026-03-02&end_date=2026-04-02 200 in 186ms
+ GET /api/hr/attendance?all=true&start_date=2026-03-01&end_date=2026-04-02 200 in 167ms
+ DELETE /api/hr/attendance?id=d57fa6e6-06a3-4d77-9612-2f237047daa0 200 in 61ms
+ GET /api/hr/attendance?staff_id=ec380579-9974-449b-85de-948f2b1aaa28&start_date=2026-03-26&end_date=2026-04-02 200 in 67ms
+ GET /api/hr/attendance?all=true&start_date=2026-03-01&end_date=2026-04-03 200 in 163ms
+ GET /api/hr/attendance?staff_id=ec380579-9974-449b-85de-948f2b1aaa28 200 in 47ms

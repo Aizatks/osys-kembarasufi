@@ -67,8 +67,10 @@ export async function POST(req: Request) {
       branch_id
     } = body;
 
-    // Malaysia timestamp
-    const nowMY = new Date(Date.now() + 8 * 60 * 60 * 1000);
+    // Use current UTC time — Supabase stores as TIMESTAMPTZ so timezone is preserved.
+    // Frontend will display using Asia/Kuala_Lumpur timezone.
+    // Previously we added +8h which caused double offset (8:32 AM → stored as 4:32 PM).
+    const myTimestamp = new Date().toISOString();
 
     // Fetch geofence: check branch first, then fallback to global settings
     // DB enum values: location_status = "ok" | "outside"; status = "on_time" | "late" | etc
@@ -125,7 +127,7 @@ export async function POST(req: Request) {
       staff_id,
       staff_name,
       type,
-      timestamp: nowMY.toISOString(),
+      timestamp: myTimestamp,
       selfie_url,
       latitude,
       longitude,
@@ -148,9 +150,12 @@ export async function POST(req: Request) {
 
     // Fallback 2: try alternate enum values for location_status
     if (result.error?.message?.includes("location_status")) {
-      // Try common enum values one by one
-      const tryValues = ["OK", "OUTSIDE", "ok", "outside", "in_range", "out_range", "present", "absent"];
-      const isInRange = location_status === "within_range";
+      // Try correct value pairs: if "ok" → try OK variants first, if "outside" → try OUTSIDE variants first
+      const isInRange = location_status === "ok";
+      const tryInRange = ["ok", "OK", "in_range", "within_range", "present"];
+      const tryOutRange = ["outside", "OUTSIDE", "out_of_range", "out_range", "absent"];
+      const tryValues = isInRange ? [...tryInRange, ...tryOutRange] : [...tryOutRange, ...tryInRange];
+
       for (const val of tryValues) {
         insertData.location_status = val;
         result = await supabase.from("hr_attendance_logs").insert([insertData]).select().single();
