@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest) {
         updateData.status = 'approved';
         break;
         case 'changeRole': {
-          const validRoles = ['staff', 'admin', 'marketing', 'c-suite', 'pengurus', 'tour-coordinator', 'ejen', 'b2b', 'sales-marketing-manager', 'admin-manager', 'hr-manager', 'finance-manager', 'tour-coordinator-manager', 'media-videographic', 'operation', 'intern'];
+          const validRoles = ['staff', 'admin', 'marketing', 'c-suite', 'pengurus', 'tour-coordinator', 'ejen', 'b2b', 'sales-marketing-manager', 'asst-sales-marketing-manager', 'admin-manager', 'hr-manager', 'finance-manager', 'tour-coordinator-manager', 'media-videographic', 'operation', 'intern'];
           if (!role || !validRoles.includes(role)) {
             return NextResponse.json({ error: 'Peranan tidak sah' }, { status: 400 });
           }
@@ -96,6 +96,7 @@ export async function PUT(request: NextRequest) {
             'pengurus': 'Pengurus',
             'admin-manager': 'Admin',
             'sales-marketing-manager': 'Sales',
+            'asst-sales-marketing-manager': 'Sales',
             'hr-manager': 'Admin',
             'finance-manager': 'Admin',
             'operation': 'Admin',
@@ -103,7 +104,7 @@ export async function PUT(request: NextRequest) {
           };
           updateData.role = role;
           updateData.category = roleCategoryMap[role] || role;
-          updateData.is_sales = ['staff', 'ejen', 'b2b', 'sales-marketing-manager'].includes(role);
+          updateData.is_sales = ['staff', 'ejen', 'b2b', 'sales-marketing-manager', 'asst-sales-marketing-manager'].includes(role);
           break;
         }
       default:

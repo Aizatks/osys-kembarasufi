@@ -129,7 +129,13 @@ export function TaskScoreDashboard() {
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
-  const ROLES = ["Sales", "Ejen", "B2B", "Marketing", "Media", "Admin", "PIC"];
+  const ROLES = [
+    "Sales", "Ejen", "B2B", "Marketing", "Media", "Admin", "PIC",
+    "Sales & Marketing Manager", "Asst. Sales & Marketing Manager",
+    "Admin Manager", "HR Manager", "Finance Manager",
+    "Tour Coordinator Manager", "Operation",
+    "C-Suite", "Pengurus", "Intern",
+  ];
 
   useEffect(() => {
     if (isAdmin === true) {
@@ -297,33 +303,17 @@ export function TaskScoreDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 mr-2">
-            <button
-              onClick={() => setSelectedRole("All")}
-              className={cn(
-                "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
-                selectedRole === "All"
-                  ? "bg-white dark:bg-slate-700 text-amber-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
-              )}
-            >
-              Semua
-            </button>
-            {ROLES.map((role) => (
-              <button
-                key={role}
-                onClick={() => setSelectedRole(role)}
-                className={cn(
-                  "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
-                  selectedRole === role
-                    ? "bg-white dark:bg-slate-700 text-amber-600 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400"
-                )}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
+          <Select value={selectedRole} onValueChange={setSelectedRole}>
+            <SelectTrigger className="w-52">
+              <SelectValue placeholder="Pilih Jawatan" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">Semua Jawatan</SelectItem>
+              {ROLES.map((role) => (
+                <SelectItem key={role} value={role}>{role}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
             <Select value={period} onValueChange={(v) => setPeriod(v as "weekly" | "monthly" | "yearly")}>
               <SelectTrigger className="w-36">

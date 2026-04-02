@@ -19,7 +19,8 @@ import {
   MoreHorizontal,
   UserX,
   UserCheck,
-  Tag
+  Tag,
+  Search
 } from "lucide-react";
 import {
   Dialog,
@@ -38,6 +39,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 interface Staff {
@@ -55,6 +57,7 @@ const ROLES = [
   { id: "staff", label: "Sales", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400" },
   { id: "admin", label: "Admin", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400" },
   { id: "sales-marketing-manager", label: "Sales & Marketing Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
+  { id: "asst-sales-marketing-manager", label: "Asst. Sales & Marketing Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
   { id: "admin-manager", label: "Admin Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
   { id: "hr-manager", label: "Human Resources Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
   { id: "finance-manager", label: "Finance Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
@@ -81,6 +84,7 @@ export function StaffContent() {
   const [loading, setLoading] = useState(true);
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "revoked">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [resetPasswordModal, setResetPasswordModal] = useState<{ open: boolean; staffId: string; staffName: string; newPassword?: string }>({ 
     open: false, 
     staffId: "", 
@@ -228,6 +232,11 @@ export function StaffContent() {
   };
 
   const filteredStaff = staff.filter(s => {
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!s.name.toLowerCase().includes(q) && !s.email.toLowerCase().includes(q)) return false;
+    }
     if (filter === "pending") return s.status === "pending";
     if (filter === "approved") return s.status === "approved";
     if (filter === "revoked") return s.status === "revoked";
@@ -291,6 +300,16 @@ export function StaffContent() {
             Nyahaktif ({staff.filter(s => s.status === "revoked").length})
           </Button>
         </div>
+      </div>
+
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Cari nama atau email staff..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
       <Card>
