@@ -148,7 +148,8 @@ function getDefaultDateRange() {
 
 export function LeadReportTab() {
   const { user, isAdmin, hasPermission } = useAuth();
-  const canViewAll = hasPermission('dashboard-leads', isAdmin);
+  const canViewAll = hasPermission('view-all-staff', isAdmin);
+  const showStaffColumn = canViewAll || !!user?.impersonatedBy;
   const [reports, setReports] = useState<LeadReport[]>([]);
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1283,8 +1284,8 @@ const handleBulkDelete = async () => {
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold hidden lg:table-cell">Remark</TableHead>
-                      {canViewAll && (
-                        <TableHead 
+                      {showStaffColumn && (
+                        <TableHead
                           className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
                           onClick={() => handleSort("staff")}
                         >
@@ -1346,7 +1347,7 @@ const handleBulkDelete = async () => {
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">{report.date_follow_up ? new Date(report.date_follow_up).toLocaleDateString("ms-MY") : "-"}</TableCell>
                         <TableCell className="max-w-[120px] truncate text-sm text-gray-600 hidden lg:table-cell">{report.remark || "-"}</TableCell>
-                        {canViewAll && (
+                        {showStaffColumn && (
                           <TableCell className="text-sm text-gray-600">{report.staff?.name || "-"}</TableCell>
                           )}
                           <TableCell>

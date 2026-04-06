@@ -75,10 +75,15 @@ export async function POST(request: NextRequest) {
           : [staffCategory]
       );
 
-      // Filter templates for this staff's category or role
-      const staffTemplates = templates.filter((t: any) =>
-        !t.target_role || t.target_role.length === 0 || t.target_role.some((r: string) => staffMatchValues.has(r))
-      );
+      // Filter templates for this staff's category/role OR if staff is specifically targeted
+      const staffTemplates = templates.filter((t: any) => {
+        // Check if this staff is specifically targeted by ID
+        if (t.target_staff_ids && t.target_staff_ids.length > 0 && t.target_staff_ids.includes(staff.id)) {
+          return true;
+        }
+        // Check role-based matching
+        return !t.target_role || t.target_role.length === 0 || t.target_role.some((r: string) => staffMatchValues.has(r));
+      });
 
       if (staffTemplates.length === 0) continue;
 

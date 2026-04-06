@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
           .from("role_permissions")
           .select("is_enabled")
           .eq("role", effectiveStaff.role)
-          .eq("view_id", "dashboard-sales")
+          .eq("view_id", "view-all-staff")
           .single();
         if (perm?.is_enabled) canViewAll = true;
       }

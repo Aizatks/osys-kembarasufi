@@ -120,9 +120,14 @@ export async function GET(request: NextRequest) {
       .eq('category', category)
       .order('sort_order', { ascending: true });
 
-    const filteredTemplates = (templates || []).filter((t: TaskTemplate) =>
-      !t.target_role || t.target_role.length === 0 || t.target_role.some((r: string) => staffMatchValues.has(r))
-    );
+    const filteredTemplates = (templates || []).filter((t: any) => {
+      // Check if this staff is specifically targeted by ID
+      if (t.target_staff_ids && t.target_staff_ids.length > 0 && t.target_staff_ids.includes(staffId)) {
+        return true;
+      }
+      // Check role-based matching
+      return !t.target_role || t.target_role.length === 0 || t.target_role.some((r: string) => staffMatchValues.has(r));
+    });
 
     // For weekly templates with frequency_days, generate one task per matching day in the week
     // For daily/monthly or weekly without frequency_days, generate once per period

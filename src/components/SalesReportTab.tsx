@@ -67,7 +67,8 @@ function getDefaultDateRange() {
 
 export function SalesReportTab() {
   const { user, isAdmin, hasPermission } = useAuth();
-  const canViewAll = hasPermission('dashboard-sales', isAdmin);
+  const canViewAll = hasPermission('view-all-staff', isAdmin);
+  const showStaffColumn = canViewAll || !!user?.impersonatedBy;
   const [reports, setReports] = useState<SalesReport[]>([]);
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,8 +152,10 @@ export function SalesReportTab() {
     try {
       const token = localStorage.getItem("auth_token");
       let staffParam = "";
-      if (canViewAll && !user?.impersonatedBy && selectedStaff !== "all") {
+      if (canViewAll && selectedStaff !== "all") {
         staffParam = `&staff_id=${selectedStaff}`;
+      } else if (!canViewAll) {
+        staffParam = `&staff_id=${user?.id}`;
       }
       const salesUrl = `/api/sales-reports?date_from=${dateRange.from}&date_to=${dateRange.to}${staffParam}`;
       const leadsUrl = `/api/lead-reports?date_from=${dateRange.from}&date_to=${dateRange.to}${staffParam}`;
@@ -1228,8 +1231,8 @@ export function SalesReportTab() {
                       </div>
                     </TableHead>
                     <TableHead className="font-semibold hidden lg:table-cell">Sumber</TableHead>
-                    {user?.role === "superadmin" && (
-                      <TableHead 
+                    {showStaffColumn && (
+                      <TableHead
                         className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
                         onClick={() => handleSort("staff")}
                       >
@@ -1290,7 +1293,7 @@ export function SalesReportTab() {
                             <span className="text-gray-400 text-xs">-</span>
                           )}
                         </TableCell>
-                        {user?.role === "superadmin" && (
+                        {showStaffColumn && (
                           <TableCell className="text-sm text-gray-600">{report.staff?.name || "-"}</TableCell>
                         )}
                         <TableCell>
