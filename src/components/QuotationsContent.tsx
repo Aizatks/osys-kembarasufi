@@ -14,7 +14,7 @@ import {
   Trash2,
   FileText
 } from "lucide-react";
-import jsPDF from "jspdf";
+// jsPDF imported dynamically where used to avoid Turbopack HMR issues
 
 interface Quotation {
   _id: string;
@@ -187,7 +187,8 @@ export function QuotationsContent() {
 
   const generatePDF = async (q: Quotation) => {
     setGeneratingPdf(q._id);
-    
+
+    const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF("p", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();

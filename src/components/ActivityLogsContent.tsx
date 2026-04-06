@@ -54,7 +54,8 @@ const getActionColor = (action: string) => {
 };
 
 export function ActivityLogsContent() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasPermission } = useAuth();
+  const canAccess = hasPermission('activity-logs', isAdmin);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -64,10 +65,10 @@ export function ActivityLogsContent() {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canAccess) {
       fetchLogs();
     }
-  }, [isAdmin, page, search, dateFrom, dateTo]);
+  }, [canAccess, page, search, dateFrom, dateTo]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -105,7 +106,7 @@ export function ActivityLogsContent() {
     });
   };
 
-  if (!isAdmin) {
+  if (!canAccess) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Anda tidak mempunyai akses ke halaman ini</p>

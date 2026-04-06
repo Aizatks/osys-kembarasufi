@@ -111,7 +111,18 @@ export async function GET(request: NextRequest) {
       const endDateOverride = searchParams.get('end_date');
       const categoryFilter = searchParams.get('category');
 
-    const isAdmin = isAdminRole(payload.role);
+    let isAdmin = isAdminRole(payload.role);
+
+    // If not admin by role, check RBAC permissions
+    if (!isAdmin) {
+      const { data: perm } = await supabase
+        .from('role_permissions')
+        .select('is_enabled')
+        .eq('role', payload.role)
+        .eq('view_id', 'task-scores')
+        .single();
+      if (perm?.is_enabled) isAdmin = true;
+    }
 
     if (period === 'yearly' && year) {
       const yearNum = parseInt(year);

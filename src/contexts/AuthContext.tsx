@@ -29,7 +29,7 @@ interface User {
       isVideoGraphic: boolean;
       isFinance: boolean;
       isHR: boolean;
-  
+    hasPermission: (viewId: string, fallback?: boolean) => boolean;
     isImpersonating: boolean;
   setImpersonation: (token: string, user: User) => void;
   endImpersonation: () => Promise<void>;
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [originalToken, setOriginalToken] = useState<string | null>(null);
+  const [rbacPermissions, setRbacPermissions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const savedToken = localStorage.getItem('auth_token');
@@ -77,6 +78,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   };
+
+  // Fetch RBAC permissions whenever user/token changes
+  useEffect(() => {
+    if (!token || !user) {
+      setRbacPermissions({});
+      return;
+    }
+    const fetchPerms = async () => {
+      try {
+        const res = await fetch('/api/settings/permissions', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const permMap: Record<string, boolean> = {};
+          data.permissions?.forEach((p: { role: string; view_id: string; is_enabled: boolean }) => {
+            if (p.role === user.role) {
+              permMap[p.view_id] = p.is_enabled;
+            }
+          });
+          setRbacPermissions(permMap);
+        }
+      } catch (err) {
+        console.error('Failed to fetch RBAC permissions:', err);
+      }
+    };
+    fetchPerms();
+  }, [token, user?.role]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -189,6 +218,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isStaff = user?.role !== 'ejen' && user?.role !== 'introducer' && !!user?.role;
     const isImpersonating = !!user?.impersonatedBy;
 
+    // Central permission check: RBAC first, then fallback to role-based default
+    const hasPermission = (viewId: string, fallback?: boolean) => {
+      if (isSuperAdmin) return true;
+      if (rbacPermissions[viewId] !== undefined) return rbacPermissions[viewId];
+      // If no RBAC entry, use fallback (defaults to isAdmin)
+      return fallback !== undefined ? fallback : isAdmin;
+    };
+
       const contextValue = React.useMemo(() => ({
         user,
         token,
@@ -207,10 +244,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isHR,
         isAgent,
         isStaff,
+        hasPermission,
         isImpersonating,
         setImpersonation,
         endImpersonation,
-      }), [user, token, isLoading, isAdmin, isSuperAdmin, isMarketing, isSales, isMedia, isVideoGraphic, isFinance, isHR, isAgent, isStaff, isImpersonating]);
+      }), [user, token, isLoading, isAdmin, isSuperAdmin, isMarketing, isSales, isMedia, isVideoGraphic, isFinance, isHR, isAgent, isStaff, rbacPermissions, isImpersonating]);
 
   return (
     <AuthContext.Provider value={contextValue}>

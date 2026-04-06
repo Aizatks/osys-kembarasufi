@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { extractTokenFromHeader, verifyToken, ADMIN_ROLES } from '@/lib/auth';
+import { extractTokenFromHeader, verifyToken, hasRBACAccess } from '@/lib/auth';
 import { logActivity } from '@/lib/activity-logger';
 
 export async function GET(request: NextRequest) {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
+    if (!payload || !(await hasRBACAccess(payload.role, 'task-templates', supabase))) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -141,7 +141,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
+    if (!payload || !(await hasRBACAccess(payload.role, 'task-templates', supabase))) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 
@@ -215,7 +215,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
+    if (!payload || !(await hasRBACAccess(payload.role, 'task-templates', supabase))) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 

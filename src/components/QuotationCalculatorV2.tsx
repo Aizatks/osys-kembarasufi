@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Check, Copy, Calculator, Info, Sparkles, Calendar, AlertCircle, Plus, Trash2, Package, X, FileDown, Loader2 } from "lucide-react";
-import jsPDF from "jspdf";
+// jsPDF imported dynamically where used to avoid Turbopack HMR issues
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -679,7 +679,7 @@ export function QuotationCalculatorV2({ data }: Props) {
       setInvoiceNumber(currentInvoiceNumber);
       toast.success("Rekod disimpan!");
       
-      generatePDF(currentInvoiceNumber);
+      await generatePDF(currentInvoiceNumber);
     } catch (err) {
       console.error("Failed to record quotation:", err);
       toast.error("Gagal menyimpan rekod. Sila cuba lagi.");
@@ -688,8 +688,9 @@ export function QuotationCalculatorV2({ data }: Props) {
     }
   };
 
-  const generatePDF = (currentInvoiceNumber: string) => {
+  const generatePDF = async (currentInvoiceNumber: string) => {
     const actualDeposit = depositValue === "custom" ? customDeposit : depositValue;
+    const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF("p", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();

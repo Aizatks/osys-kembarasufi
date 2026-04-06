@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Clock, MapPin, Camera, CheckCircle2, History,
   RefreshCw, Download, Users, Pencil, Trash2, X, Check,
-  Calendar, Plus, Building2, MapPinned
+  Calendar, Plus, Building2, MapPinned, Timer, User
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,12 +53,41 @@ const STATUS_LABELS: Record<string, string> = {
   'out_of_range': 'Luar Kawasan'
 };
 
+interface WorkSchedule {
+  id: string;
+  name: string;
+  schedule_type: "branch" | "individual";
+  branch_id?: string;
+  staff_id?: string;
+  staff_name?: string;
+  work_start: string;
+  work_end: string;
+  late_tolerance: number;
+  work_days: number[];
+  is_active: boolean;
+  created_at: string;
+}
+
+const DAY_LABELS = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+
 const emptyBranch = {
   name: "",
   address: "",
   latitude: "",
   longitude: "",
   radius: "200",
+};
+
+const emptySchedule = {
+  name: "",
+  schedule_type: "branch" as const,
+  branch_id: "",
+  staff_id: "",
+  staff_name: "",
+  work_start: "09:00",
+  work_end: "18:00",
+  late_tolerance: "15",
+  work_days: [1, 2, 3, 4, 5] as number[],
 };
 
 export function AttendanceContent() {
@@ -100,6 +129,17 @@ export function AttendanceContent() {
   const [branchLoading, setBranchLoading] = useState(false);
   const [branchSetupSql, setBranchSetupSql] = useState("");
 
+  // Schedules
+  const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
+  const [schedForm, setSchedForm] = useState(emptySchedule);
+  const [isAddSchedOpen, setIsAddSchedOpen] = useState(false);
+  const [editSched, setEditSched] = useState<WorkSchedule | null>(null);
+  const [editSchedForm, setEditSchedForm] = useState(emptySchedule);
+  const [deleteSched, setDeleteSched] = useState<WorkSchedule | null>(null);
+  const [schedLoading, setSchedLoading] = useState(false);
+  const [schedSetupSql, setSchedSetupSql] = useState("");
+  const [staffList, setStaffList] = useState<{ id: string; name: string }[]>([]);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -114,6 +154,7 @@ export function AttendanceContent() {
     if (activeTab === "history") fetchHistoryLogs();
     else if (activeTab === "all" && canViewAllStaff) fetchAllStaffLogs();
     else if (activeTab === "branches" && canViewAllStaff) fetchBranches();
+    else if (activeTab === "schedules" && canViewAllStaff) { fetchSchedules(); fetchBranches(); fetchStaffList(); }
   }, [activeTab]);
 
   // ── FETCH FUNCTIONS ──
@@ -181,6 +222,110 @@ export function AttendanceContent() {
     } catch (err) { console.error(err); setBranches([]); }
     finally { setBranchLoading(false); }
   };
+
+  // ── LOCATION ──
+
+  // ── SCHEDULES ──
+
+  const fetchSchedules = async () => {
+    setSchedLoading(true);
+    try {
+      const res = await fetch("/api/hr/schedules");
+      const data = await res.json();
+      if (data.needsSetup) { setSchedSetupSql(data.setupSql || ""); }
+      setSchedules(data.schedules || []);
+    } catch { setSchedules([]); }
+    finally { setSchedLoading(false); }
+  };
+
+  const fetchStaffList = async () => {
+    try {
+      const t = localStorage.getItem("auth_token");
+      const res = await fetch("/api/staff", { headers: { Authorization: `Bearer ${t}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setStaffList((data.staff || []).map((s: any) => ({ id: s.id, name: s.name })));
+      }
+    } catch {}
+  };
+
+  const handleAddSchedule = async () => {
+    if (!schedForm.name.trim()) { toast.error("Nama jadual wajib diisi"); return; }
+    setSchedLoading(true);
+    try {
+      const payload: any = {
+        name: schedForm.name,
+        schedule_type: schedForm.schedule_type,
+        work_start: schedForm.work_start,
+        work_end: schedForm.work_end,
+        late_tolerance: parseInt(schedForm.late_tolerance) || 15,
+        work_days: schedForm.work_days,
+      };
+      if (schedForm.schedule_type === "branch" && schedForm.branch_id && schedForm.branch_id !== "all") payload.branch_id = schedForm.branch_id;
+      if (schedForm.schedule_type === "individual" && schedForm.staff_id) {
+        payload.staff_id = schedForm.staff_id;
+        payload.staff_name = schedForm.staff_name;
+      }
+      const res = await fetch("/api/hr/schedules", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Jadual waktu kerja berjaya ditambah!");
+        setIsAddSchedOpen(false); setSchedForm(emptySchedule); fetchSchedules();
+      } else {
+        if (data.setupSql) setSchedSetupSql(data.setupSql);
+        toast.error(data.error || "Gagal tambah jadual");
+      }
+    } catch { toast.error("Ralat sambungan"); }
+    finally { setSchedLoading(false); }
+  };
+
+  const handleEditSchedule = async () => {
+    if (!editSched) return;
+    setSchedLoading(true);
+    try {
+      const payload: any = {
+        id: editSched.id,
+        name: editSchedForm.name,
+        schedule_type: editSchedForm.schedule_type,
+        work_start: editSchedForm.work_start,
+        work_end: editSchedForm.work_end,
+        late_tolerance: parseInt(editSchedForm.late_tolerance) || 15,
+        work_days: editSchedForm.work_days,
+      };
+      if (editSchedForm.schedule_type === "branch") payload.branch_id = editSchedForm.branch_id || null;
+      if (editSchedForm.schedule_type === "individual") {
+        payload.staff_id = editSchedForm.staff_id;
+        payload.staff_name = editSchedForm.staff_name;
+      }
+      const res = await fetch("/api/hr/schedules", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        toast.success("Jadual berjaya dikemaskini!"); setEditSched(null); fetchSchedules();
+      } else {
+        const data = await res.json(); toast.error(data.error || "Gagal kemaskini");
+      }
+    } catch { toast.error("Ralat sambungan"); }
+    finally { setSchedLoading(false); }
+  };
+
+  const handleDeleteSchedule = async () => {
+    if (!deleteSched) return;
+    setSchedLoading(true);
+    try {
+      const res = await fetch(`/api/hr/schedules?id=${deleteSched.id}`, { method: "DELETE" });
+      if (res.ok) { toast.success("Jadual berjaya dipadam"); setDeleteSched(null); fetchSchedules(); }
+      else { const d = await res.json(); toast.error(d.error || "Gagal padam"); }
+    } catch { toast.error("Ralat sambungan"); }
+    finally { setSchedLoading(false); }
+  };
+
+  const toggleDay = (days: number[], day: number) =>
+    days.includes(day) ? days.filter(d => d !== day) : [...days, day].sort();
 
   // ── LOCATION ──
 
@@ -472,7 +617,7 @@ export function AttendanceContent() {
     </div>
   );
 
-  const tabCount = canViewAllStaff ? 4 : 2;
+  const tabCount = canViewAllStaff ? 5 : 2;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto p-4">
@@ -489,6 +634,7 @@ export function AttendanceContent() {
           <TabsTrigger value="history" className="gap-2"><History className="w-4 h-4" /> Sejarah Saya</TabsTrigger>
           {canViewAllStaff && <TabsTrigger value="all" className="gap-2"><Users className="w-4 h-4" /> Semua Staff</TabsTrigger>}
           {canViewAllStaff && <TabsTrigger value="branches" className="gap-2"><Building2 className="w-4 h-4" /> Cawangan</TabsTrigger>}
+          {canViewAllStaff && <TabsTrigger value="schedules" className="gap-2"><Timer className="w-4 h-4" /> Waktu Kerja</TabsTrigger>}
         </TabsList>
 
         {/* ══ CLOCK IN/OUT TAB ══ */}
@@ -738,6 +884,121 @@ export function AttendanceContent() {
             </Card>
           </TabsContent>
         )}
+        {/* ══ WAKTU KERJA TAB ══ */}
+        {canViewAllStaff && (
+          <TabsContent value="schedules" className="mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2"><Timer className="w-5 h-5" /> Tetapan Waktu Kerja</CardTitle>
+                  <CardDescription>Tetapkan waktu kerja mengikut cawangan atau individu</CardDescription>
+                </div>
+                <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shrink-0" onClick={() => { setIsAddSchedOpen(true); setSchedForm(emptySchedule); }}>
+                  <Plus className="w-4 h-4" /> Tambah Jadual
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {schedSetupSql && schedules.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
+                    <p className="font-semibold text-amber-800 text-sm">Jadual database belum dibuat</p>
+                    <p className="text-xs text-amber-700 mt-1">Sila jalankan SQL berikut dalam <strong>Supabase SQL Editor</strong>:</p>
+                    <pre className="bg-white border rounded p-2 text-xs overflow-auto mt-2 max-h-40">{schedSetupSql}</pre>
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="outline" onClick={fetchSchedules}>Cuba Semula</Button>
+                      <Button size="sm" variant="ghost" className="text-xs" onClick={() => { navigator.clipboard.writeText(schedSetupSql); toast.success("SQL disalin!"); }}>Salin SQL</Button>
+                    </div>
+                  </div>
+                )}
+
+                {schedLoading ? (
+                  <div className="text-center py-12"><RefreshCw className="w-8 h-8 mx-auto text-slate-300 animate-spin" /></div>
+                ) : schedules.length === 0 && !schedSetupSql ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-xl border-2 border-dashed">
+                    <Timer className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                    <p className="text-slate-500 text-sm">Tiada jadual waktu kerja</p>
+                    <p className="text-xs text-slate-400 mt-1">Klik "Tambah Jadual" untuk mula</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {schedules.map(s => {
+                      const branchName = branches.find(b => b.id === s.branch_id)?.name;
+                      return (
+                        <div key={s.id} className={cn(
+                          "p-4 rounded-xl border-2 transition-all",
+                          s.is_active ? "border-indigo-200 bg-indigo-50/30" : "border-slate-200 bg-slate-50 opacity-60"
+                        )}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 className="font-semibold text-sm flex items-center gap-1.5">
+                                {s.schedule_type === "branch" ? <Building2 className="w-4 h-4 text-indigo-500" /> : <User className="w-4 h-4 text-blue-500" />}
+                                {s.name}
+                              </h3>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                {s.schedule_type === "branch"
+                                  ? (branchName ? `Cawangan: ${branchName}` : "Semua cawangan")
+                                  : `Staff: ${s.staff_name || s.staff_id || "-"}`}
+                              </p>
+                            </div>
+                            <Badge className={s.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}>
+                              {s.is_active ? "Aktif" : "Tidak Aktif"}
+                            </Badge>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                            <div className="bg-white rounded p-2 text-center">
+                              <p className="text-slate-400">Masuk</p>
+                              <p className="font-bold text-emerald-600">{s.work_start?.slice(0,5)}</p>
+                            </div>
+                            <div className="bg-white rounded p-2 text-center">
+                              <p className="text-slate-400">Keluar</p>
+                              <p className="font-bold text-blue-600">{s.work_end?.slice(0,5)}</p>
+                            </div>
+                            <div className="bg-white rounded p-2 text-center">
+                              <p className="text-slate-400">Toleransi</p>
+                              <p className="font-bold">{s.late_tolerance} min</p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-1 mt-2 flex-wrap">
+                            {[0,1,2,3,4,5,6].map(d => (
+                              <span key={d} className={cn(
+                                "text-[10px] px-1.5 py-0.5 rounded",
+                                (s.work_days || []).includes(d) ? "bg-indigo-100 text-indigo-700 font-medium" : "bg-slate-100 text-slate-400"
+                              )}>{DAY_LABELS[d]?.slice(0,3)}</span>
+                            ))}
+                          </div>
+
+                          <div className="flex gap-2 mt-3">
+                            <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={() => {
+                              setEditSched(s);
+                              setEditSchedForm({
+                                name: s.name,
+                                schedule_type: s.schedule_type,
+                                branch_id: s.branch_id || "",
+                                staff_id: s.staff_id || "",
+                                staff_name: s.staff_name || "",
+                                work_start: s.work_start?.slice(0,5) || "09:00",
+                                work_end: s.work_end?.slice(0,5) || "18:00",
+                                late_tolerance: String(s.late_tolerance || 15),
+                                work_days: s.work_days || [1,2,3,4,5],
+                              });
+                            }}>
+                              <Pencil className="w-3 h-3" /> Edit
+                            </Button>
+                            <Button size="sm" variant="outline" className="gap-1 text-xs text-red-500 hover:bg-red-50"
+                              onClick={() => setDeleteSched(s)}>
+                              <Trash2 className="w-3 h-3" /> Padam
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* ══ ADD BRANCH DIALOG ══ */}
@@ -883,6 +1144,181 @@ export function AttendanceContent() {
           </Card>
         </div>
       )}
+
+      {/* ══ ADD SCHEDULE DIALOG ══ */}
+      <Dialog open={isAddSchedOpen} onOpenChange={o => { setIsAddSchedOpen(o); if (!o) setSchedForm(emptySchedule); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Tambah Jadual Waktu Kerja</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Nama Jadual <span className="text-red-500">*</span></Label>
+              <Input placeholder="Cth: Waktu Kerja HQ" value={schedForm.name} onChange={e => setSchedForm({ ...schedForm, name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Jenis</Label>
+              <Select value={schedForm.schedule_type} onValueChange={v => setSchedForm({ ...schedForm, schedule_type: v as "branch" | "individual", branch_id: "", staff_id: "", staff_name: "" })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="branch">Cawangan</SelectItem>
+                  <SelectItem value="individual">Individu (Staff)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {schedForm.schedule_type === "branch" && (
+              <div className="space-y-1">
+                <Label>Cawangan</Label>
+                <Select value={schedForm.branch_id} onValueChange={v => setSchedForm({ ...schedForm, branch_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Semua cawangan (default)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Cawangan</SelectItem>
+                    {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {schedForm.schedule_type === "individual" && (
+              <div className="space-y-1">
+                <Label>Staff</Label>
+                <Select value={schedForm.staff_id} onValueChange={v => {
+                  const staff = staffList.find(s => s.id === v);
+                  setSchedForm({ ...schedForm, staff_id: v, staff_name: staff?.name || "" });
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Pilih staff" /></SelectTrigger>
+                  <SelectContent>
+                    {staffList.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Waktu Masuk</Label>
+                <Input type="time" value={schedForm.work_start} onChange={e => setSchedForm({ ...schedForm, work_start: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Waktu Keluar</Label>
+                <Input type="time" value={schedForm.work_end} onChange={e => setSchedForm({ ...schedForm, work_end: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Toleransi Lewat (minit)</Label>
+              <Input type="number" value={schedForm.late_tolerance} onChange={e => setSchedForm({ ...schedForm, late_tolerance: e.target.value })} />
+              <p className="text-[10px] text-slate-400">Tempoh masa selepas waktu masuk sebelum dikira lewat</p>
+            </div>
+            <div className="space-y-1">
+              <Label>Hari Bekerja</Label>
+              <div className="flex gap-1 flex-wrap">
+                {DAY_LABELS.map((label, idx) => (
+                  <button key={idx} type="button" onClick={() => setSchedForm({ ...schedForm, work_days: toggleDay(schedForm.work_days, idx) })}
+                    className={cn("text-xs px-2.5 py-1.5 rounded-md border transition-all", schedForm.work_days.includes(idx) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-200 hover:border-slate-400")}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddSchedOpen(false)}>Batal</Button>
+            <Button onClick={handleAddSchedule} disabled={schedLoading} className="bg-indigo-600 hover:bg-indigo-700">
+              {schedLoading ? "Menyimpan..." : "Tambah Jadual"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ══ EDIT SCHEDULE DIALOG ══ */}
+      <Dialog open={!!editSched} onOpenChange={o => { if (!o) setEditSched(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit Jadual Waktu Kerja</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Nama Jadual <span className="text-red-500">*</span></Label>
+              <Input value={editSchedForm.name} onChange={e => setEditSchedForm({ ...editSchedForm, name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Jenis</Label>
+              <Select value={editSchedForm.schedule_type} onValueChange={v => setEditSchedForm({ ...editSchedForm, schedule_type: v as "branch" | "individual", branch_id: "", staff_id: "", staff_name: "" })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="branch">Cawangan</SelectItem>
+                  <SelectItem value="individual">Individu (Staff)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editSchedForm.schedule_type === "branch" && (
+              <div className="space-y-1">
+                <Label>Cawangan</Label>
+                <Select value={editSchedForm.branch_id} onValueChange={v => setEditSchedForm({ ...editSchedForm, branch_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Semua cawangan (default)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Cawangan</SelectItem>
+                    {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {editSchedForm.schedule_type === "individual" && (
+              <div className="space-y-1">
+                <Label>Staff</Label>
+                <Select value={editSchedForm.staff_id} onValueChange={v => {
+                  const staff = staffList.find(s => s.id === v);
+                  setEditSchedForm({ ...editSchedForm, staff_id: v, staff_name: staff?.name || "" });
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Pilih staff" /></SelectTrigger>
+                  <SelectContent>
+                    {staffList.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Waktu Masuk</Label>
+                <Input type="time" value={editSchedForm.work_start} onChange={e => setEditSchedForm({ ...editSchedForm, work_start: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Waktu Keluar</Label>
+                <Input type="time" value={editSchedForm.work_end} onChange={e => setEditSchedForm({ ...editSchedForm, work_end: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Toleransi Lewat (minit)</Label>
+              <Input type="number" value={editSchedForm.late_tolerance} onChange={e => setEditSchedForm({ ...editSchedForm, late_tolerance: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Hari Bekerja</Label>
+              <div className="flex gap-1 flex-wrap">
+                {DAY_LABELS.map((label, idx) => (
+                  <button key={idx} type="button" onClick={() => setEditSchedForm({ ...editSchedForm, work_days: toggleDay(editSchedForm.work_days, idx) })}
+                    className={cn("text-xs px-2.5 py-1.5 rounded-md border transition-all", editSchedForm.work_days.includes(idx) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-500 border-slate-200 hover:border-slate-400")}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditSched(null)}>Batal</Button>
+            <Button onClick={handleEditSchedule} disabled={schedLoading} className="bg-blue-600 hover:bg-blue-700">
+              {schedLoading ? "Menyimpan..." : "Simpan Perubahan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ══ DELETE SCHEDULE DIALOG ══ */}
+      <Dialog open={!!deleteSched} onOpenChange={o => { if (!o) setDeleteSched(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle className="text-red-600">Padam Jadual Waktu Kerja</DialogTitle></DialogHeader>
+          <p className="text-sm">Adakah anda pasti ingin memadam jadual <strong>{deleteSched?.name}</strong>?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteSched(null)}>Batal</Button>
+            <Button variant="destructive" onClick={handleDeleteSchedule} disabled={schedLoading}>
+              {schedLoading ? "Memadamkan..." : "Ya, Padam"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -79,7 +79,8 @@ const getRoleConfig = (roleId: string) => {
 };
 
 export function StaffContent() {
-  const { user, isAdmin, isSuperAdmin, setImpersonation } = useAuth();
+  const { user, isAdmin, isSuperAdmin, setImpersonation, hasPermission } = useAuth();
+  const canAccess = hasPermission('staff', isAdmin);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
@@ -93,10 +94,10 @@ export function StaffContent() {
   const [resettingPassword, setResettingPassword] = useState(false);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canAccess) {
       fetchStaff();
     }
-  }, [isAdmin]);
+  }, [canAccess]);
 
   const fetchStaff = async () => {
     try {
@@ -243,7 +244,7 @@ export function StaffContent() {
     return true;
   });
 
-  if (!isAdmin) {
+  if (!canAccess) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Anda tidak mempunyai akses ke halaman ini</p>

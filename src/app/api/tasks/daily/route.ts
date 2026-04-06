@@ -68,11 +68,32 @@ export async function GET(request: NextRequest) {
 
     const { data: staff } = await supabase
       .from('staff')
-      .select('category')
+      .select('category, role')
       .eq('id', staffId)
       .single();
 
     const staffCategory = staff?.category || 'Sales';
+    // Build list of all target_role values that match this staff
+    const ROLE_LABEL_MAP: Record<string, string> = {
+      'staff': 'Sales', 'ejen': 'Ejen', 'b2b': 'B2B', 'marketing': 'Marketing',
+      'media-videographic': 'Media', 'admin': 'Admin', 'tour-coordinator': 'PIC',
+      'tour-coordinator-manager': 'Tour Coordinator Manager', 'c-suite': 'C-Suite',
+      'pengurus': 'Pengurus', 'intern': 'Intern', 'operation': 'Operation',
+      'sales-marketing-manager': 'Sales & Marketing Manager',
+      'asst-sales-marketing-manager': 'Asst. Sales & Marketing Manager',
+      'admin-manager': 'Admin Manager', 'hr-manager': 'HR Manager',
+      'finance-manager': 'Finance Manager',
+    };
+    const staffRoleLabel = ROLE_LABEL_MAP[staff?.role || ''] || staffCategory;
+    // If the staff has a specific role label that differs from their category,
+    // only match templates for that specific role — not the broad category.
+    // e.g. Asst. Sales & Marketing Manager should NOT see all "Sales" templates.
+    // Only basic roles (staff->Sales, ejen->Ejen, etc.) where label == category get broad matching.
+    const staffMatchValues = new Set(
+      staffRoleLabel !== staffCategory
+        ? [staffRoleLabel]
+        : [staffCategory]
+    );
 
     const targetDate = new Date(dateParam);
     const { start: periodStart, end: periodEnd } = getDateRange(category, targetDate);
@@ -100,7 +121,7 @@ export async function GET(request: NextRequest) {
       .order('sort_order', { ascending: true });
 
     const filteredTemplates = (templates || []).filter((t: TaskTemplate) =>
-      !t.target_role || t.target_role.length === 0 || t.target_role.includes(staffCategory)
+      !t.target_role || t.target_role.length === 0 || t.target_role.some((r: string) => staffMatchValues.has(r))
     );
 
     // For weekly templates with frequency_days, generate one task per matching day in the week
@@ -179,11 +200,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
       }
 
-      // Filter out tasks whose template is inactive or deleted
+      // Get set of matching template IDs for this staff
+      const matchingTemplateIds = new Set(filteredTemplates.map(t => t.id));
+
+      // Filter out tasks whose template is inactive, deleted, or not matching staff role
       const filteredAllTasks = (allTasks || []).filter(t => {
         if (!t.template_id) return true; // custom task - keep
         if (!t.template) return false; // template deleted - hide
         if (t.template.is_active === false) return false; // template inactive - hide
+        // Only show tasks whose template matches this staff's role
+        if (!matchingTemplateIds.has(t.template_id)) return false;
         return true;
       });
 

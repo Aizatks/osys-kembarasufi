@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+import { verifyToken, extractTokenFromHeader, ADMIN_ROLES } from "@/lib/auth";
 import { cleanPhoneNumber, checkPhoneExistsInDB } from "@/lib/phone-utils";
 
 function getSupabase() {
@@ -89,7 +89,19 @@ export async function GET(request: NextRequest) {
         .order("date_lead", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       
-      if (effectiveStaff.role !== "superadmin" && effectiveStaff.role !== "admin") {
+      // Check if user has admin role or RBAC permission to view all staff data
+      let canViewAll = ADMIN_ROLES.includes(effectiveStaff.role);
+      if (!canViewAll) {
+        const { data: perm } = await supabase
+          .from("role_permissions")
+          .select("is_enabled")
+          .eq("role", effectiveStaff.role)
+          .eq("view_id", "dashboard-leads")
+          .single();
+        if (perm?.is_enabled) canViewAll = true;
+      }
+
+      if (!canViewAll) {
         query = query.eq("staff_id", effectiveStaff.id);
       } else if (staffId && staffId !== "all") {
         query = query.eq("staff_id", staffId);
@@ -196,7 +208,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
     
-    if (effectiveStaff.role !== "superadmin" && effectiveStaff.role !== "admin" && existingReport.staff_id !== effectiveStaff.id) {
+    if (!ADMIN_ROLES.includes(effectiveStaff.role) && existingReport.staff_id !== effectiveStaff.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     
@@ -272,7 +284,7 @@ export async function DELETE(request: NextRequest) {
     
     // Bulk delete
     if (idArray.length > 0) {
-      if (effectiveStaff.role !== "superadmin" && effectiveStaff.role !== "admin") {
+      if (!ADMIN_ROLES.includes(effectiveStaff.role)) {
         const { data: reports } = await supabase
           .from("lead_reports")
           .select("id, staff_id")
@@ -316,7 +328,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
     
-    if (effectiveStaff.role !== "superadmin" && effectiveStaff.role !== "admin" && existingReport.staff_id !== effectiveStaff.id) {
+    if (!ADMIN_ROLES.includes(effectiveStaff.role) && existingReport.staff_id !== effectiveStaff.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     

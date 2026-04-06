@@ -121,7 +121,80 @@ export async function POST(req: Request) {
       }
     }
 
-    const status = location_status === "outside" ? "outside_geofence" : "on_time";
+    // Determine on_time / late status based on work schedule
+    let status = "on_time";
+    if (location_status === "outside") {
+      status = "outside_geofence";
+    } else if (type === "in") {
+      // Check work schedule for this staff/branch
+      try {
+        const nowMY = new Date(new Date().getTime() + 8 * 60 * 60 * 1000);
+        const currentTime = `${String(nowMY.getUTCHours()).padStart(2, "0")}:${String(nowMY.getUTCMinutes()).padStart(2, "0")}`;
+        const dayOfWeek = nowMY.getUTCDay(); // 0=Sun, 1=Mon, ...
+
+        // Priority: individual schedule > branch schedule
+        let schedule = null;
+
+        // 1. Check individual schedule
+        const { data: indvSchedule } = await supabase
+          .from("hr_work_schedules")
+          .select("*")
+          .eq("staff_id", staff_id)
+          .eq("schedule_type", "individual")
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        if (indvSchedule) {
+          schedule = indvSchedule;
+        } else {
+          // 2. Find nearest branch and check branch schedule
+          const { data: branchSchedules } = await supabase
+            .from("hr_work_schedules")
+            .select("*")
+            .eq("schedule_type", "branch")
+            .eq("is_active", true);
+
+          if (branchSchedules && branchSchedules.length > 0) {
+            // Find schedule for matched branch or first active one
+            if (matched_branch) {
+              // Get branch_id from matched branch name
+              const { data: matchedBr } = await supabase
+                .from("hr_branches")
+                .select("id")
+                .eq("name", matched_branch)
+                .maybeSingle();
+
+              if (matchedBr) {
+                schedule = branchSchedules.find((s: any) => s.branch_id === matchedBr.id) || null;
+              }
+            }
+            // Fallback to any active branch schedule
+            if (!schedule) schedule = branchSchedules[0];
+          }
+        }
+
+        if (schedule) {
+          const workDays: number[] = schedule.work_days || [1, 2, 3, 4, 5];
+          const tolerance = schedule.late_tolerance || 15;
+          const workStart = schedule.work_start; // "09:00"
+
+          if (workDays.includes(dayOfWeek)) {
+            // Compare current time vs work_start + tolerance
+            const [startH, startM] = workStart.split(":").map(Number);
+            const deadlineMinutes = startH * 60 + startM + tolerance;
+            const currentMinutes = parseInt(currentTime.split(":")[0]) * 60 + parseInt(currentTime.split(":")[1]);
+
+            if (currentMinutes > deadlineMinutes) {
+              status = "late";
+            }
+          }
+        }
+      } catch (schedErr) {
+        // Schedule table might not exist yet — just default to on_time
+        console.error("Schedule check error (non-fatal):", schedErr);
+      }
+    }
 
     const insertData: any = {
       staff_id,

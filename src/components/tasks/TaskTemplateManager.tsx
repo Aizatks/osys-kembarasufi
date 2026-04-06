@@ -73,7 +73,8 @@ const DAYS = [
 ];
 
 export function TaskTemplateManager() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasPermission } = useAuth();
+  const canAccess = hasPermission('task-templates', isAdmin);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [allStaff, setAllStaff] = useState<StaffItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,11 +106,11 @@ export function TaskTemplateManager() {
     });
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canAccess) {
       fetchTemplates();
       fetchStaff();
     }
-  }, [isAdmin, selectedCategory]);
+  }, [canAccess, selectedCategory]);
 
   const fetchStaff = async () => {
     try {
@@ -330,7 +331,7 @@ export function TaskTemplateManager() {
       }
     };
 
-    if (!isAdmin) {
+    if (!canAccess) {
       return (
         <div className="flex items-center justify-center py-20">
           <p className="text-gray-500">Akses ditolak</p>

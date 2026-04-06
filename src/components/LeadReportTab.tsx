@@ -147,7 +147,8 @@ function getDefaultDateRange() {
 }
 
 export function LeadReportTab() {
-  const { user } = useAuth();
+  const { user, isAdmin, hasPermission } = useAuth();
+  const canViewAll = hasPermission('dashboard-leads', isAdmin);
   const [reports, setReports] = useState<LeadReport[]>([]);
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,11 +218,10 @@ export function LeadReportTab() {
     try {
       let url = `/api/lead-reports?date_from=${dateRange.from}&date_to=${dateRange.to}`;
       
-      // Kalau bukan superadmin/admin, filter by user's own staff_id
-      if (user?.role !== "superadmin" && user?.role !== "admin") {
+      // If user can view all (admin or RBAC), allow staff filter; otherwise filter to own data
+      if (!canViewAll) {
         url += `&staff_id=${user?.id}`;
       } else if (selectedStaff !== "all") {
-        // Admin/superadmin boleh pilih staff atau semua
         url += `&staff_id=${selectedStaff}`;
       }
       
@@ -757,7 +757,7 @@ const handleBulkDelete = async () => {
           <p className="text-sm text-muted-foreground">Database kemasukan lead harian & status follow up</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          {(user?.role === "superadmin" || user?.role === "admin") && (
+          {canViewAll && (
             <Select value={selectedStaff} onValueChange={setSelectedStaff}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Pilih Staff" />
@@ -1283,7 +1283,7 @@ const handleBulkDelete = async () => {
                         </div>
                       </TableHead>
                       <TableHead className="font-semibold hidden lg:table-cell">Remark</TableHead>
-                      {(user?.role === "superadmin" || user?.role === "admin") && (
+                      {canViewAll && (
                         <TableHead 
                           className="font-semibold cursor-pointer hover:bg-gray-100 select-none"
                           onClick={() => handleSort("staff")}
@@ -1346,7 +1346,7 @@ const handleBulkDelete = async () => {
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">{report.date_follow_up ? new Date(report.date_follow_up).toLocaleDateString("ms-MY") : "-"}</TableCell>
                         <TableCell className="max-w-[120px] truncate text-sm text-gray-600 hidden lg:table-cell">{report.remark || "-"}</TableCell>
-                        {(user?.role === "superadmin" || user?.role === "admin") && (
+                        {canViewAll && (
                           <TableCell className="text-sm text-gray-600">{report.staff?.name || "-"}</TableCell>
                           )}
                           <TableCell>

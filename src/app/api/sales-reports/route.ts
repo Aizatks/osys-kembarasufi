@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { verifyToken, extractTokenFromHeader } from "@/lib/auth";
+import { verifyToken, extractTokenFromHeader, ADMIN_ROLES } from "@/lib/auth";
 import { logActivity } from "@/lib/activity-logger";
 
 function getSupabase() {
@@ -91,11 +91,23 @@ export async function GET(request: NextRequest) {
         .order("date_closed", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       
-      // If impersonating, show only that staff's data
-      if (isImpersonating && viewingAsStaff) {
-        query = query.eq("staff_id", viewingAsStaff.id);
-      } else if (staff.role !== "superadmin" && staff.role !== "admin") {
-        query = query.eq("staff_id", staff.id);
+      // Determine the effective staff for data access
+      const effectiveStaff = isImpersonating && viewingAsStaff ? viewingAsStaff : staff;
+
+      // Check if effective staff has admin role or RBAC permission to view all staff data
+      let canViewAll = ADMIN_ROLES.includes(effectiveStaff.role);
+      if (!canViewAll) {
+        const { data: perm } = await supabase
+          .from("role_permissions")
+          .select("is_enabled")
+          .eq("role", effectiveStaff.role)
+          .eq("view_id", "dashboard-sales")
+          .single();
+        if (perm?.is_enabled) canViewAll = true;
+      }
+
+      if (!canViewAll) {
+        query = query.eq("staff_id", effectiveStaff.id);
       } else if (staffId && staffId !== "all") {
         query = query.eq("staff_id", staffId);
       }
@@ -210,10 +222,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
     
-    if (staff.role !== "superadmin" && staff.role !== "admin" && existingReport.staff_id !== staff.id) {
+    if (!ADMIN_ROLES.includes(staff.role) && existingReport.staff_id !== staff.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    
+
     const { data, error } = await supabase
       .from("sales_reports")
       .update({
@@ -287,7 +299,7 @@ export async function DELETE(request: NextRequest) {
     
     // Bulk delete
     if (idArray.length > 0) {
-      if (staff.role !== "superadmin" && staff.role !== "admin") {
+      if (!ADMIN_ROLES.includes(staff.role)) {
         const { data: reports } = await supabase
           .from("sales_reports")
           .select("id, staff_id")
@@ -370,10 +382,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
     
-    if (staff.role !== "superadmin" && staff.role !== "admin" && existingReport.staff_id !== staff.id) {
+    if (!ADMIN_ROLES.includes(staff.role) && existingReport.staff_id !== staff.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    
+
     const { error } = await supabase
       .from("sales_reports")
       .delete()

@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'jimp', 'sharp'],
+  serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'jimp', 'sharp', 'jspdf'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

@@ -13,7 +13,22 @@ export async function GET(request: NextRequest) {
     }
 
     const payload = verifyToken(token);
-    if (!payload || !ADMIN_ROLES.includes(payload.role)) {
+    if (!payload) {
+      return NextResponse.json({ error: 'Token tidak sah' }, { status: 401 });
+    }
+
+    // Check admin role OR RBAC permission for staff view
+    let hasAccess = ADMIN_ROLES.includes(payload.role);
+    if (!hasAccess) {
+      const { data: perm } = await supabase
+        .from('role_permissions')
+        .select('is_enabled')
+        .eq('role', payload.role)
+        .eq('view_id', 'staff')
+        .single();
+      hasAccess = !!perm?.is_enabled;
+    }
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Akses ditolak' }, { status: 403 });
     }
 

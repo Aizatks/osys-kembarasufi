@@ -49,6 +49,22 @@ export function isAdminRole(role: string): boolean {
   return ADMIN_ROLES.includes(role);
 }
 
+// Check RBAC: admin role OR permission in DB
+export async function hasRBACAccess(role: string, viewId: string, supabaseClient: any): Promise<boolean> {
+  if (ADMIN_ROLES.includes(role)) return true;
+  try {
+    const { data } = await supabaseClient
+      .from('role_permissions')
+      .select('is_enabled')
+      .eq('role', role)
+      .eq('view_id', viewId)
+      .single();
+    return !!data?.is_enabled;
+  } catch {
+    return false;
+  }
+}
+
 export function extractTokenFromHeader(authHeader: string | null): string | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;

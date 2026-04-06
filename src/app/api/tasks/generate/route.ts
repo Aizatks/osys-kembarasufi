@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get all approved staff (or specific staff_ids)
-    let staffQuery = supabase.from('staff').select('id, name, category').eq('status', 'approved');
+    let staffQuery = supabase.from('staff').select('id, name, category, role').eq('status', 'approved');
     if (staff_ids && staff_ids.length > 0) {
       staffQuery = staffQuery.in('id', staff_ids);
     }
@@ -53,12 +53,31 @@ export async function POST(request: NextRequest) {
     let totalGenerated = 0;
     const errors: string[] = [];
 
+    const ROLE_LABEL_MAP: Record<string, string> = {
+      'staff': 'Sales', 'ejen': 'Ejen', 'b2b': 'B2B', 'marketing': 'Marketing',
+      'media-videographic': 'Media', 'admin': 'Admin', 'tour-coordinator': 'PIC',
+      'tour-coordinator-manager': 'Tour Coordinator Manager', 'c-suite': 'C-Suite',
+      'pengurus': 'Pengurus', 'intern': 'Intern', 'operation': 'Operation',
+      'sales-marketing-manager': 'Sales & Marketing Manager',
+      'asst-sales-marketing-manager': 'Asst. Sales & Marketing Manager',
+      'admin-manager': 'Admin Manager', 'hr-manager': 'HR Manager',
+      'finance-manager': 'Finance Manager',
+    };
+
     for (const staff of staffList) {
       const staffCategory = staff.category || 'Sales';
+      const staffRoleLabel = ROLE_LABEL_MAP[staff.role || ''] || staffCategory;
+      // If staff has a specific role label different from category,
+      // only match that specific role — not the broad category.
+      const staffMatchValues = new Set(
+        staffRoleLabel !== staffCategory
+          ? [staffRoleLabel]
+          : [staffCategory]
+      );
 
-      // Filter templates for this staff's category
+      // Filter templates for this staff's category or role
       const staffTemplates = templates.filter((t: any) =>
-        !t.target_role || t.target_role.length === 0 || t.target_role.includes(staffCategory)
+        !t.target_role || t.target_role.length === 0 || t.target_role.some((r: string) => staffMatchValues.has(r))
       );
 
       if (staffTemplates.length === 0) continue;

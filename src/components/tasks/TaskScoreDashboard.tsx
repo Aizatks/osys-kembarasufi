@@ -100,7 +100,8 @@ interface YearlyReport {
 }
 
 export function TaskScoreDashboard() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasPermission } = useAuth();
+  const canAccess = hasPermission('task-scores', isAdmin);
   const [scores, setScores] = useState<StaffScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"weekly" | "monthly" | "yearly">("weekly");
@@ -138,12 +139,12 @@ export function TaskScoreDashboard() {
   ];
 
   useEffect(() => {
-    if (isAdmin === true) {
+    if (canAccess) {
       fetchScores();
-    } else if (isAdmin === false) {
+    } else {
       setLoading(false);
     }
-  }, [isAdmin, period, selectedYear, selectedMonth, dateRangeStart, dateRangeEnd, selectedRole]);
+  }, [canAccess, period, selectedYear, selectedMonth, dateRangeStart, dateRangeEnd, selectedRole]);
 
   const filteredScores = scores.filter(s => {
     if (selectedRole === "All") return true;
@@ -282,7 +283,7 @@ export function TaskScoreDashboard() {
     return months[month - 1];
   };
 
-  if (!isAdmin) {
+  if (!canAccess) {
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500">Akses ditolak</p>

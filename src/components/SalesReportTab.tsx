@@ -66,7 +66,8 @@ function getDefaultDateRange() {
 }
 
 export function SalesReportTab() {
-  const { user } = useAuth();
+  const { user, isAdmin, hasPermission } = useAuth();
+  const canViewAll = hasPermission('dashboard-sales', isAdmin);
   const [reports, setReports] = useState<SalesReport[]>([]);
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,7 +151,7 @@ export function SalesReportTab() {
     try {
       const token = localStorage.getItem("auth_token");
       let staffParam = "";
-      if ((user?.role === "superadmin" || user?.role === "admin") && !user?.impersonatedBy && selectedStaff !== "all") {
+      if (canViewAll && !user?.impersonatedBy && selectedStaff !== "all") {
         staffParam = `&staff_id=${selectedStaff}`;
       }
       const salesUrl = `/api/sales-reports?date_from=${dateRange.from}&date_to=${dateRange.to}${staffParam}`;
@@ -663,7 +664,7 @@ export function SalesReportTab() {
           <p className="text-sm text-muted-foreground">Database jualan yang berjaya close</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
-          {(user?.role === "superadmin" || user?.role === "admin") && (
+          {canViewAll && (
             <Select value={selectedStaff} onValueChange={setSelectedStaff}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Pilih Staff" />
