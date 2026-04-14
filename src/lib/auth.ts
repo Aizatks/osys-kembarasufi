@@ -12,7 +12,7 @@ export interface JWTPayload {
   userId: string;
   email: string;
   name: string;
-  role: 'admin' | 'staff' | 'superadmin' | 'marketing' | 'c-suite' | 'pengurus' | 'tour-coordinator' | 'tour-coordinator-manager' | 'ejen' | 'b2b' | 'intern' | 'asst-sales-marketing-manager';
+  role: string;
   impersonatedBy?: string;
   impersonatorName?: string;
 }

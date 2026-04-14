@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -87,7 +88,7 @@ export function PricingSettingsContent() {
 
   const fetchPricing = async () => {
     try {
-      const res = await fetch("/api/packages/pricing");
+      const res = await fetchAuth("/api/packages/pricing");
       if (res.ok) {
         const data = await res.json();
         setPricing(data.pricing || []);
@@ -101,9 +102,8 @@ export function PricingSettingsContent() {
 
   const handleUpdatePricing = async (item: PricingItem) => {
     try {
-      const res = await fetch("/api/packages/pricing", {
+      const res = await fetchJsonAuth("/api/packages/pricing", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(item)
       });
 
@@ -124,9 +124,8 @@ export function PricingSettingsContent() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/packages/pricing", {
+      const res = await fetchJsonAuth("/api/packages/pricing", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newPackage)
       });
 

@@ -6,7 +6,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-    role: 'admin' | 'staff' | 'superadmin' | 'marketing' | 'c-suite' | 'pengurus' | 'tour-coordinator' | 'ejen' | 'introducer' | 'sales-marketing-manager' | 'admin-manager' | 'hr-manager' | 'finance-manager' | 'tour-coordinator-manager' | 'media-videographic' | 'media-graphic' | 'video-graphic' | 'creative-designer' | 'social-media' | 'operation' | 'finance' | 'hr' | 'intern';
+    role: string;
     status: string;
     category?: string;
     isSales: boolean;

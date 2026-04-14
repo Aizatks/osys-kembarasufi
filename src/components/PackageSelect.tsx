@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { fetchAuth } from "@/lib/fetch-utils";
 
 interface PackageSelectProps {
   value: string;
@@ -40,7 +41,7 @@ export function PackageSelect({
   useEffect(() => {
     const fetchPackages = async () => {
       try {
-        const res = await fetch("/api/packages");
+        const res = await fetchAuth("/api/packages");
         const data = await res.json();
         if (data.data) {
           setPackages(data.data);

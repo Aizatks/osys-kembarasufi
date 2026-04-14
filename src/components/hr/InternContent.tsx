@@ -19,6 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface Intern {
@@ -135,7 +136,7 @@ export function InternContent() {
   const fetchInterns = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/hr/interns");
+      const res = await fetchAuth("/api/hr/interns");
       const data = await res.json();
       if (data.needsSetup) {
         setSetupNeeded(true);
@@ -146,7 +147,7 @@ export function InternContent() {
         setSetupNeeded(false);
       } else {
         // Column missing - fetch migration SQL
-        const mRes = await fetch("/api/hr/interns/migrate", { method: "POST" });
+        const mRes = await fetchJsonAuth("/api/hr/interns/migrate", { method: "POST", body: JSON.stringify({}) });
         const mData = await mRes.json();
         if (mData.sql) { setSetupNeeded(true); setSetupSql(mData.sql); }
         toast.error(data.error || "Gagal memuatkan data");
@@ -162,7 +163,7 @@ export function InternContent() {
 
   const checkMigration = async () => {
     try {
-      const res = await fetch("/api/hr/interns/migrate", { method: "POST" });
+      const res = await fetchJsonAuth("/api/hr/interns/migrate", { method: "POST", body: JSON.stringify({}) });
       const data = await res.json();
       if (data.sql) {
         setSetupSql(data.sql);
@@ -178,9 +179,8 @@ export function InternContent() {
     }
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/hr/interns", {
+      const res = await fetchJsonAuth("/api/hr/interns", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(addForm),
       });
       const data = await res.json();
@@ -195,7 +195,7 @@ export function InternContent() {
           setSetupSql(data.setupSql || "");
         } else if (data.error?.includes("column") || data.error?.includes("schema")) {
           // Column missing - get migration SQL
-          const mRes = await fetch("/api/hr/interns/migrate", { method: "POST" });
+          const mRes = await fetchJsonAuth("/api/hr/interns/migrate", { method: "POST", body: JSON.stringify({}) });
           const mData = await mRes.json();
           if (mData.sql) { setSetupNeeded(true); setSetupSql(mData.sql); }
         }
@@ -229,9 +229,8 @@ export function InternContent() {
     }
     setIsEditSubmitting(true);
     try {
-      const res = await fetch("/api/hr/interns", {
+      const res = await fetchJsonAuth("/api/hr/interns", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: editIntern.id, ...editForm }),
       });
       const data = await res.json();
@@ -254,7 +253,7 @@ export function InternContent() {
     if (!deleteIntern) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/hr/interns?id=${deleteIntern.id}`, { method: "DELETE" });
+      const res = await fetchAuth(`/api/hr/interns?id=${deleteIntern.id}`, { method: "DELETE" });
       const data = await res.json();
       if (res.ok) {
         toast.success("Rekod intern berjaya dipadam");

@@ -24,6 +24,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRoles } from "@/hooks/useRoles";
 
 interface StaffItem {
   id: string;
@@ -54,13 +55,7 @@ interface TaskTemplate {
   { value: "monthly", label: "Bulanan" },
 ];
 
-const ROLES = [
-  "Sales", "Ejen", "B2B", "Marketing", "Media", "Admin", "PIC",
-  "Sales & Marketing Manager", "Asst. Sales & Marketing Manager",
-  "Admin Manager", "HR Manager", "Finance Manager",
-  "Tour Coordinator Manager", "Operation",
-  "C-Suite", "Pengurus", "Intern",
-];
+// ROLES now fetched dynamically via useRoles hook — see component body
 
 const DAYS = [
   { value: 1, label: 'Isn' },
@@ -74,6 +69,8 @@ const DAYS = [
 
 export function TaskTemplateManager() {
   const { isAdmin, hasPermission } = useAuth();
+  const { assignableRoles } = useRoles();
+  const ROLES = assignableRoles.map(r => r.label);
   const canAccess = hasPermission('task-templates', isAdmin);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [allStaff, setAllStaff] = useState<StaffItem[]>([]);

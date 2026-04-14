@@ -44,6 +44,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface Applicant {
@@ -82,7 +83,7 @@ export function RecruitmentContent() {
 
   const fetchApplicants = async () => {
     try {
-      const res = await fetch("/api/hr/recruitment");
+      const res = await fetchAuth("/api/hr/recruitment");
       if (res.ok) {
         const data = await res.json();
         setApplicants(data.applicants || []);
@@ -101,9 +102,8 @@ export function RecruitmentContent() {
     }
 
     try {
-      const res = await fetch("/api/hr/recruitment", {
+      const res = await fetchJsonAuth("/api/hr/recruitment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newApplicant)
       });
 
@@ -120,9 +120,8 @@ export function RecruitmentContent() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const res = await fetch("/api/hr/recruitment", {
+      const res = await fetchJsonAuth("/api/hr/recruitment", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status })
       });
 

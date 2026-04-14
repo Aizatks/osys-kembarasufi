@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useRoles } from "@/hooks/useRoles";
 import {
   BarChart3,
   Trophy,
@@ -130,13 +131,8 @@ export function TaskScoreDashboard() {
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
-  const ROLES = [
-    "Sales", "Ejen", "B2B", "Marketing", "Media", "Admin", "PIC",
-    "Sales & Marketing Manager", "Asst. Sales & Marketing Manager",
-    "Admin Manager", "HR Manager", "Finance Manager",
-    "Tour Coordinator Manager", "Operation",
-    "C-Suite", "Pengurus", "Intern",
-  ];
+  const { assignableRoles } = useRoles();
+  const ROLES = assignableRoles.map(r => r.label);
 
   useEffect(() => {
     if (canAccess) {

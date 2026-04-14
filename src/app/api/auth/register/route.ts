@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { hashPassword, generateToken } from '@/lib/auth';
+import { notifyNewRegistration } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
         name,
         email: email.toLowerCase(),
         password: hashedPassword,
-        role: isFirstUser ? 'superadmin' : 'staff',
+        role: isFirstUser ? 'superadmin' : 'unassigned',
         status: isFirstUser ? 'approved' : 'pending',
       })
       .select()
@@ -57,6 +58,13 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Insert error:', error);
       return NextResponse.json({ error: 'Ralat sistem' }, { status: 500 });
+    }
+
+    // Notify superadmins of new registration (async, don't block response)
+    if (!isFirstUser) {
+      notifyNewRegistration(name, email.toLowerCase()).catch(err =>
+        console.error('Email notification failed:', err)
+      );
     }
 
     const token = generateToken({
@@ -68,8 +76,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: isFirstUser 
-        ? 'Pendaftaran berjaya sebagai Super Admin' 
-        : 'Pendaftaran berjaya. Sila tunggu kelulusan admin.',
+        ? 'Pendaftaran berjaya sebagai Super Admin'
+        : 'Pendaftaran berjaya. Sila tunggu kelulusan admin dan penetapan peranan.',
       token: isFirstUser ? token : null,
         user: {
           id: newStaff.id,

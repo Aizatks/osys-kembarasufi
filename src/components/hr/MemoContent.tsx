@@ -36,6 +36,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface Memo {
@@ -71,7 +72,7 @@ export function MemoContent() {
 
   const fetchMemos = async () => {
     try {
-      const res = await fetch(`/api/hr/memos?staff_id=${user?.id}`);
+      const res = await fetchAuth(`/api/hr/memos?staff_id=${user?.id}`);
       if (res.ok) {
         const data = await res.json();
         setMemos(data.memos || []);
@@ -85,9 +86,8 @@ export function MemoContent() {
 
   const handleAcknowledge = async (memoId: string) => {
     try {
-      const res = await fetch("/api/hr/memos", {
+      const res = await fetchJsonAuth("/api/hr/memos", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ memo_id: memoId, staff_id: user?.id })
       });
       if (res.ok) {
@@ -106,9 +106,8 @@ export function MemoContent() {
     }
 
     try {
-      const res = await fetch("/api/hr/memos", {
+      const res = await fetchJsonAuth("/api/hr/memos", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newMemo)
       });
 

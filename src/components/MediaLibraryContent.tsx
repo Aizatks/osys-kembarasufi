@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +62,7 @@ export function MediaLibraryContent() {
       if (categoryFilter !== "all") params.append("category", categoryFilter);
       if (packageFilter !== "all") params.append("package", packageFilter);
       
-      const response = await fetch(`/api/media-library?${params}`);
+      const response = await fetchAuth(`/api/media-library?${params}`);
       if (response.ok) {
         const data = await response.json();
         setAssets(data);
@@ -116,9 +117,8 @@ export function MediaLibraryContent() {
         else fileType = 'file';
       }
 
-      const response = await fetch('/api/media-library', {
+      const response = await fetchJsonAuth('/api/media-library', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           category,
@@ -149,7 +149,7 @@ export function MediaLibraryContent() {
     if (!confirm(`Adakah anda pasti mahu membuang "${title}"?`)) return;
 
     try {
-      const response = await fetch(`/api/media-library?id=${id}&userId=${user?.id}`, {
+      const response = await fetchAuth(`/api/media-library?id=${id}&userId=${user?.id}`, {
         method: 'DELETE'
       });
 

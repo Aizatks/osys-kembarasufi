@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface StaffDocument {
@@ -82,7 +83,7 @@ export function StaffDocsContent() {
   const fetchDocs = async () => {
     try {
       const url = isAdmin ? "/api/hr/staff-docs" : `/api/hr/staff-docs?staff_id=${user?.id}`;
-      const res = await fetch(url);
+      const res = await fetchAuth(url);
       if (res.ok) {
         const data = await res.json();
         setDocs(data.documents || []);
@@ -96,7 +97,7 @@ export function StaffDocsContent() {
 
   const fetchStaff = async () => {
     try {
-      const res = await fetch("/api/staff");
+      const res = await fetchAuth("/api/staff");
       if (res.ok) {
         const data = await res.json();
         setStaffList(data.staff || []);
@@ -113,7 +114,7 @@ export function StaffDocsContent() {
     }
 
     try {
-      const res = await fetch("/api/hr/staff-docs", {
+      const res = await fetchJsonAuth("/api/hr/staff-docs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -136,7 +137,7 @@ export function StaffDocsContent() {
   const handleDelete = async (id: string) => {
     if (!confirm("Adakah anda pasti mahu memadam dokumen ini?")) return;
     try {
-      const res = await fetch(`/api/hr/staff-docs?id=${id}`, { method: "DELETE" });
+      const res = await fetchAuth(`/api/hr/staff-docs?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Dokumen dipadam");
         fetchDocs();

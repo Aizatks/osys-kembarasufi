@@ -25,6 +25,8 @@ import { PayrollContent } from "./hr/PayrollContent";
 import { RecruitmentContent } from "./hr/RecruitmentContent";
 import { InternContent } from "./hr/InternContent";
 import { CalendarContent } from "./hr/CalendarContent";
+import { LeaveContent } from "./hr/LeaveContent";
+import { PerformanceContent } from "./hr/PerformanceContent";
 import { RosterContent } from "./operations/RosterContent";
 import { TripDatesContent } from "./operations/TripDatesContent";
 import { PricingSettingsContent } from "./operations/PricingSettingsContent";
@@ -346,7 +348,9 @@ export function MainLayout({ children }: Props) {
                     {activeView === "hr-memos" && <MemoContent />}
                     {activeView === "hr-claims" && <ClaimContent />}
                     {activeView === "hr-staff-docs" && <StaffDocsContent />}
+                    {activeView === "hr-leave" && <LeaveContent />}
                     {activeView === "hr-payroll" && <PayrollContent />}
+                    {activeView === "hr-performance" && <PerformanceContent />}
                     {activeView === "hr-recruitment" && <RecruitmentContent />}
                     {activeView === "hr-interns" && <InternContent />}
                     {activeView === "workspaces" && <WorkspaceContent />}

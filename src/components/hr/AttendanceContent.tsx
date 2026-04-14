@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface AttendanceLog {
@@ -91,7 +92,7 @@ const emptySchedule = {
 };
 
 export function AttendanceContent() {
-  const { user, token, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [allLogs, setAllLogs] = useState<AttendanceLog[]>([]);
   const [historyLogs, setHistoryLogs] = useState<AttendanceLog[]>([]);
@@ -161,9 +162,7 @@ export function AttendanceContent() {
 
   const fetchTodayLogs = async () => {
     try {
-      const res = await fetch(`/api/hr/attendance?staff_id=${user?.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetchAuth(`/api/hr/attendance?staff_id=${user?.id}`);
       if (res.ok) {
         const data = await res.json();
         setLogs(data.logs || []);
@@ -174,9 +173,8 @@ export function AttendanceContent() {
   const fetchHistoryLogs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/hr/attendance?staff_id=${user?.id}&start_date=${histStartDate}&end_date=${histEndDate}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await fetchAuth(
+        `/api/hr/attendance?staff_id=${user?.id}&start_date=${histStartDate}&end_date=${histEndDate}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -189,9 +187,8 @@ export function AttendanceContent() {
   const fetchAllStaffLogs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/hr/attendance?all=true&start_date=${allStartDate}&end_date=${allEndDate}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await fetchAuth(
+        `/api/hr/attendance?all=true&start_date=${allStartDate}&end_date=${allEndDate}`
       );
       if (res.ok) {
         const data = await res.json();
@@ -204,7 +201,7 @@ export function AttendanceContent() {
   const fetchBranches = async () => {
     setBranchLoading(true);
     try {
-      const res = await fetch("/api/hr/branches");
+      const res = await fetchAuth("/api/hr/branches");
       const data = await res.json();
       if (data.needsSetup) {
         setBranchSetupSql(`CREATE TABLE IF NOT EXISTS hr_branches (
@@ -230,7 +227,7 @@ export function AttendanceContent() {
   const fetchSchedules = async () => {
     setSchedLoading(true);
     try {
-      const res = await fetch("/api/hr/schedules");
+      const res = await fetchAuth("/api/hr/schedules");
       const data = await res.json();
       if (data.needsSetup) { setSchedSetupSql(data.setupSql || ""); }
       setSchedules(data.schedules || []);
@@ -240,8 +237,7 @@ export function AttendanceContent() {
 
   const fetchStaffList = async () => {
     try {
-      const t = localStorage.getItem("auth_token");
-      const res = await fetch("/api/staff", { headers: { Authorization: `Bearer ${t}` } });
+      const res = await fetchAuth("/api/staff");
       if (res.ok) {
         const data = await res.json();
         setStaffList((data.staff || []).map((s: any) => ({ id: s.id, name: s.name })));
@@ -266,8 +262,8 @@ export function AttendanceContent() {
         payload.staff_id = schedForm.staff_id;
         payload.staff_name = schedForm.staff_name;
       }
-      const res = await fetch("/api/hr/schedules", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetchJsonAuth("/api/hr/schedules", {
+        method: "POST",
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -300,8 +296,8 @@ export function AttendanceContent() {
         payload.staff_id = editSchedForm.staff_id;
         payload.staff_name = editSchedForm.staff_name;
       }
-      const res = await fetch("/api/hr/schedules", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
+      const res = await fetchJsonAuth("/api/hr/schedules", {
+        method: "PATCH",
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -317,7 +313,7 @@ export function AttendanceContent() {
     if (!deleteSched) return;
     setSchedLoading(true);
     try {
-      const res = await fetch(`/api/hr/schedules?id=${deleteSched.id}`, { method: "DELETE" });
+      const res = await fetchAuth(`/api/hr/schedules?id=${deleteSched.id}`, { method: "DELETE" });
       if (res.ok) { toast.success("Jadual berjaya dipadam"); setDeleteSched(null); fetchSchedules(); }
       else { const d = await res.json(); toast.error(d.error || "Gagal padam"); }
     } catch { toast.error("Ralat sambungan"); }
@@ -407,9 +403,8 @@ export function AttendanceContent() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/hr/attendance", {
+      const res = await fetchJsonAuth("/api/hr/attendance", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           staff_id: user?.id, staff_name: user?.name, type,
           selfie_url: selfie, latitude: location.lat, longitude: location.lng,
@@ -435,9 +430,8 @@ export function AttendanceContent() {
     if (!editingLog) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/hr/attendance", {
+      const res = await fetchJsonAuth("/api/hr/attendance", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           id: editingLog.id, type: editingLog.type,
           status: editingLog.status, timestamp: editingLog.timestamp, note: editingLog.note
@@ -458,9 +452,7 @@ export function AttendanceContent() {
   const handleDelete = async (id: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/hr/attendance?id=${id}`, {
-        method: "DELETE", headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetchAuth(`/api/hr/attendance?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Rekod berjaya dipadam");
         setDeletingId(null);
@@ -482,9 +474,8 @@ export function AttendanceContent() {
     if (!branchForm.name.trim()) { toast.error("Nama cawangan wajib diisi"); return; }
     setBranchLoading(true);
     try {
-      const res = await fetch("/api/hr/branches", {
+      const res = await fetchJsonAuth("/api/hr/branches", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: branchForm.name,
           address: branchForm.address,
@@ -510,9 +501,8 @@ export function AttendanceContent() {
     if (!editBranch) return;
     setBranchLoading(true);
     try {
-      const res = await fetch("/api/hr/branches", {
+      const res = await fetchJsonAuth("/api/hr/branches", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: editBranch.id,
           name: editBranchForm.name,
@@ -537,7 +527,7 @@ export function AttendanceContent() {
     if (!deleteBranch) return;
     setBranchLoading(true);
     try {
-      const res = await fetch(`/api/hr/branches?id=${deleteBranch.id}`, { method: "DELETE" });
+      const res = await fetchAuth(`/api/hr/branches?id=${deleteBranch.id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Cawangan berjaya dipadam");
         setDeleteBranch(null); fetchBranches();

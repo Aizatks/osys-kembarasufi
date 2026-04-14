@@ -1,7 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyToken, extractTokenFromHeader, isAdminRole } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Admin-only protection
+  const token = extractTokenFromHeader(request.headers.get('authorization'));
+  if (!token) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const payload = verifyToken(token);
+  if (!payload || !isAdminRole(payload.role)) {
+    return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

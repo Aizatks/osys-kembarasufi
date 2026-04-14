@@ -66,6 +66,8 @@ import {
   | "hr-payroll"
   | "hr-recruitment"
   | "hr-interns"
+  | "hr-leave"
+  | "hr-performance"
   | "workspaces"
   | "calendar"
   | "operations-roster"
@@ -206,6 +208,8 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
   const canSeePayroll = hasPermission("hr-payroll", isAdmin || isHR || isFinance);
   const canSeeRecruitment = hasPermission("hr-recruitment", isAdmin || isHR);
   const canSeeInterns = hasPermission("hr-interns", isAdmin || isHR);
+  const canSeeLeave = hasPermission("hr-leave", isStaff);
+  const canSeePerformance = hasPermission("hr-performance", isAdmin || isHR);
   const canSeeWorkspaces = hasPermission("workspaces", isStaff);
   const canSeeCalendar = hasPermission("calendar", isStaff);
   const canSeeOperations = hasPermission("operations-roster", isAdmin || user?.role === 'operation');
@@ -477,7 +481,9 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                             {canSeeMemos && <SubMenuItem view="hr-memos" icon={FileText} label="Memo" colorClass="blue" />}
                             {canSeeClaims && <SubMenuItem view="hr-claims" icon={Wallet} label="Claim" colorClass="blue" />}
                             {canSeeStaffDocs && <SubMenuItem view="hr-staff-docs" icon={FileText} label="Dokumen Staff" colorClass="blue" />}
+                            {canSeeLeave && <SubMenuItem view="hr-leave" icon={CalendarIcon} label="Cuti" colorClass="blue" />}
                             {canSeePayroll && <SubMenuItem view="hr-payroll" icon={Banknote} label="Payroll" colorClass="blue" />}
+                            {canSeePerformance && <SubMenuItem view="hr-performance" icon={Trophy} label="Prestasi" colorClass="blue" />}
                             {canSeeRecruitment && <SubMenuItem view="hr-recruitment" icon={Briefcase} label="Recruitment" colorClass="blue" />}
                             {canSeeInterns && <SubMenuItem view="hr-interns" icon={GraduationCap} label="Intern" colorClass="blue" />}
                             {canSeeStaff && <SubMenuItem view="staff" icon={Users2} label="Pengurusan Staff" colorClass="blue" />}

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface TripDate {
@@ -120,7 +121,7 @@ export function TripDatesContent() {
 
   const fetchMasterPackages = async () => {
     try {
-      const res = await fetch("/api/packages");
+      const res = await fetchAuth("/api/packages");
       if (res.ok) {
         const data = await res.json();
         setMasterPackages(data.data || []);
@@ -136,12 +137,12 @@ export function TripDatesContent() {
       
       if (shouldSync) {
         // Only sync if explicitly requested
-        const syncRes = await fetch("/api/operations/trip-dates/sync", { method: "POST" });
+        const syncRes = await fetchJsonAuth("/api/operations/trip-dates/sync", { method: "POST", body: JSON.stringify({}) });
         if (!syncRes.ok) throw new Error("Sync failed");
         toast.success("Data berjaya di-sync dari Google Sheets");
       }
 
-      const res = await fetch("/api/operations/trip-dates");
+      const res = await fetchAuth("/api/operations/trip-dates");
       if (res.ok) {
         const data = await res.json();
         setTripDates(data.trip_dates || []);
@@ -163,9 +164,8 @@ export function TripDatesContent() {
     }
     
     try {
-      const res = await fetch("/api/operations/trip-dates", {
+      const res = await fetchJsonAuth("/api/operations/trip-dates", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, [field]: finalValue })
       });
 

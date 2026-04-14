@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Check, Copy, Calculator, Info, Sparkles, Calendar, AlertCircle, Plus, Trash2, Package, X, FileDown, Loader2 } from "lucide-react";
 // jsPDF imported dynamically where used to avoid Turbopack HMR issues
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -130,7 +131,7 @@ function getPicForPackage(pkgName: string): { name: string; phone: string } | nu
 }
 
 export function QuotationCalculatorV2({ data }: Props) {
-  const { token } = useAuth();
+  useAuth(); // ensure authenticated
   const [packages, setPackages] = useState<PackageSelection[]>([createEmptyPackage()]);
   const [searchQuery, setSearchQuery] = useState("");
   const [discount, setDiscount] = useState({ mode: "none", value: 0, applyInfant: false });
@@ -202,7 +203,7 @@ export function QuotationCalculatorV2({ data }: Props) {
       const fetchDates = async () => {
         updatePackage(activePackageIdx, { loadingDates: true });
         try {
-          const res = await fetch(`/api/dates?gid=${pkgData.sheetGid}&pkgName=${encodeURIComponent(pkgData.name)}`);
+          const res = await fetchAuth(`/api/dates?gid=${pkgData.sheetGid}&pkgName=${encodeURIComponent(pkgData.name)}`);
           if (res.ok) {
             const json = await res.json();
             updatePackage(activePackageIdx, { dates: json.dates || [], loadingDates: false });
@@ -603,16 +604,10 @@ export function QuotationCalculatorV2({ data }: Props) {
       const pkgData = data[mainPkg?.pkgKey];
       const calc = calculatePackage(mainPkg);
       
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
       const picInfo = getPicForPackage(pkgData?.name || '');
-      
-      const response = await fetch('/api/record-quotation', {
+
+      const response = await fetchJsonAuth('/api/record-quotation', {
         method: 'POST',
-        headers,
         body: JSON.stringify({
           packageName: pkgData?.name || 'N/A',
           tripDate: getDisplayDate(mainPkg) || 'Akan Dimaklumkan',

@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface RosterItem {
@@ -47,7 +48,7 @@ export function RosterContent() {
 
   const fetchRoster = async () => {
     try {
-      const res = await fetch("/api/operations/roster");
+      const res = await fetchAuth("/api/operations/roster");
       if (res.ok) {
         const data = await res.json();
         setRoster(data.roster || []);
@@ -62,9 +63,8 @@ export function RosterContent() {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const res = await fetch("/api/operations/roster", {
+      const res = await fetchJsonAuth("/api/operations/roster", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "GENERATE_ROSTER" })
       });
 

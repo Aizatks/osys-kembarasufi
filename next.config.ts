@@ -7,14 +7,10 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          // Allow iframe embedding from kembarasufi.com
-          {
-            key: "X-Frame-Options",
-            value: "ALLOWALL",
-          },
+          // CSP frame-ancestors replaces X-Frame-Options (more flexible, supports domain whitelisting)
           {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self' https://kembarasufi.com https://*.kembarasufi.com http://kembarasufi.com http://*.kembarasufi.com",
+            value: "frame-ancestors 'self' https://kembarasufi.com https://*.kembarasufi.com http://kembarasufi.com http://*.kembarasufi.com https://*.orchids.cloud",
           },
           // Allow camera, microphone, geolocation inside iframe
           {
@@ -41,7 +37,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'jimp', 'sharp', 'jspdf'],
+  serverExternalPackages: ['@whiskeysockets/baileys', 'pino', 'jimp', 'sharp', 'jspdf', 'resend', 'jsonwebtoken', 'semver'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {

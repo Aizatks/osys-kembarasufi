@@ -5,14 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, LogIn, Eye, X } from 'lucide-react';
+import { Loader2, LogIn, Eye, X, Clock, LogOut } from 'lucide-react';
 
 interface AuthGateProps {
   children: ReactNode;
 }
 
 export function AuthGate({ children }: AuthGateProps) {
-  const { user, isLoading, isImpersonating, endImpersonation } = useAuth();
+  const { user, isLoading, isImpersonating, endImpersonation, logout } = useAuth();
   const router = useRouter();
 
   if (isLoading) {
@@ -51,6 +51,39 @@ export function AuthGate({ children }: AuthGateProps) {
                 Daftar Akaun Baru
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show notice for unassigned role or pending status
+  if (user.role === 'unassigned' || user.status === 'pending') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2230%22%20height%3D%2230%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M1.22676%200C1.91374%200%202.45351%200.539773%202.45351%201.22676C2.45351%201.91374%201.91374%202.45351%201.22676%202.45351C0.539773%202.45351%200%201.91374%200%201.22676C0%200.539773%200.539773%200%201.22676%200Z%22%20fill%3D%22rgba(255%2C255%2C255%2C0.05)%22%2F%3E%3C%2Fsvg%3E')] opacity-40"></div>
+        <Card className="w-full max-w-md relative z-10 border-slate-700 bg-slate-800/80 backdrop-blur-sm">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto w-20 h-20 bg-amber-600 rounded-xl flex items-center justify-center mb-4">
+              <Clock className="w-10 h-10 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-white">Menunggu Penetapan</CardTitle>
+            <CardDescription className="text-slate-400">
+              {user.status === 'pending'
+                ? 'Akaun anda sedang menunggu kelulusan admin.'
+                : 'Peranan anda belum ditetapkan oleh admin.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4 text-center">
+              <p className="text-amber-400 text-sm">
+                Sila hubungi Super Admin untuk mendapatkan kelulusan dan penetapan peranan.
+              </p>
+            </div>
+            <p className="text-xs text-slate-500 text-center">Log masuk sebagai: {user.email}</p>
+            <Button variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-700" onClick={logout}>
+              <LogOut className="w-4 h-4 mr-2" /> Log Keluar
+            </Button>
           </CardContent>
         </Card>
       </div>

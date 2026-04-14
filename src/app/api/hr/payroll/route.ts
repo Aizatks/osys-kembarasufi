@@ -15,6 +15,7 @@ export async function GET(req: Request) {
     let query = supabase
       .from("hr_payroll")
       .select("*")
+      .neq("status", "salary_config")
       .order("period_start", { ascending: false });
 
     if (staff_id) {

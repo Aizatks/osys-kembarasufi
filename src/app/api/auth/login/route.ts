@@ -3,9 +3,22 @@ import { cookies } from 'next/headers';
 import { supabase } from '@/lib/supabase';
 import { verifyPassword, generateToken } from '@/lib/auth';
 import { logActivity } from '@/lib/activity-logger';
+import { checkRateLimit } from '@/lib/rate-limit';
+
+const LOGIN_RATE_LIMIT = { windowMs: 15 * 60 * 1000, maxAttempts: 5 }; // 5 attempts per 15 min
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const { allowed, retryAfterMs } = checkRateLimit(`login:${ip}`, LOGIN_RATE_LIMIT);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: `Terlalu banyak percubaan log masuk. Sila cuba lagi dalam ${Math.ceil(retryAfterMs / 60000)} minit.` },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(retryAfterMs / 1000)) } }
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 

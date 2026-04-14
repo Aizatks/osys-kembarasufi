@@ -17,7 +17,7 @@ export interface Staff {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'staff' | 'superadmin';
+  role: string;
   status: 'pending' | 'approved' | 'rejected';
   last_login?: string;
   created_at: string;

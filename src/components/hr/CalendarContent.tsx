@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 interface CalendarEvent {
@@ -46,7 +47,7 @@ export function CalendarContent() {
       const start = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).toISOString();
       const end = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).toISOString();
       
-      const res = await fetch(`/api/calendar?staff_id=${user?.id}&start=${start}&end=${end}`);
+      const res = await fetchAuth(`/api/calendar?staff_id=${user?.id}&start=${start}&end=${end}`);
       if (res.ok) {
         const data = await res.json();
         setEvents(data.events || []);

@@ -36,6 +36,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 
 export function CreativeRequestsContent() {
@@ -58,7 +59,7 @@ export function CreativeRequestsContent() {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.append("status", statusFilter);
       
-      const response = await fetch(`/api/creative-requests?${params}`);
+      const response = await fetchAuth(`/api/creative-requests?${params}`);
       if (response.ok) {
         const data = await response.json();
         setRequests(data);
@@ -76,9 +77,8 @@ export function CreativeRequestsContent() {
     const formData = new FormData(e.currentTarget);
     
     try {
-      const response = await fetch('/api/creative-requests', {
+      const response = await fetchJsonAuth('/api/creative-requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: formData.get("title"),
             description: formData.get("description"),
@@ -105,9 +105,8 @@ export function CreativeRequestsContent() {
 
   const handleUpdateStatus = async (id: string, status: string, resultUrl?: string) => {
     try {
-      const response = await fetch('/api/creative-requests', {
+      const response = await fetchJsonAuth('/api/creative-requests', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id,
           status,

@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
     const { data, error } = await supabase
       .from("hr_claims")
-      .insert([{ staff_id, amount, category, date, attachments, remarks, status: "Submitted" }])
+      .insert([{ staff_id, amount, category: category?.toLowerCase(), date, attachments, remarks, status: "submitted" }])
       .select()
       .single();
 
@@ -62,7 +62,7 @@ export async function PATCH(req: Request) {
     const { claim_id, action_by, action, note } = body;
 
     // Update claim status
-    const status = action === "APPROVE" ? "Approved" : action === "REJECT" ? "Rejected" : "Paid";
+    const status = action === "APPROVE" ? "approved" : action === "REJECT" ? "rejected" : "paid";
     
     const { error: claimError } = await supabase
       .from("hr_claims")

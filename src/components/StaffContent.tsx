@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useRoles } from "@/hooks/useRoles";
 
 interface Staff {
   id: string;
@@ -53,33 +54,9 @@ interface Staff {
   last_login?: string;
 }
 
-const ROLES = [
-  { id: "staff", label: "Sales", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400" },
-  { id: "admin", label: "Admin", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400" },
-  { id: "sales-marketing-manager", label: "Sales & Marketing Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
-  { id: "asst-sales-marketing-manager", label: "Asst. Sales & Marketing Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
-  { id: "admin-manager", label: "Admin Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
-  { id: "hr-manager", label: "Human Resources Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
-  { id: "finance-manager", label: "Finance Manager", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
-  { id: "tour-coordinator-manager", label: "Tour Coordinator Manager(pic)", color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-400" },
-  { id: "marketing", label: "Marketing", color: "bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-400" },
-  { id: "media-videographic", label: "Media/Video Graphic", color: "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-400" },
-  { id: "operation", label: "Operation", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400" },
-  { id: "c-suite", label: "C-Suite", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400" },
-  { id: "tour-coordinator", label: "Tour Coordinator (PIC)", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400" },
-  { id: "ejen", label: "Ejen", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400" },
-  { id: "b2b", label: "B2B", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-400" },
-  { id: "intern", label: "Intern", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400" },
-  { id: "superadmin", label: "Superadmin", color: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400" },
-  { id: "pengurus", label: "Pengurus (Legacy)", color: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-400" }
-];
-
-const getRoleConfig = (roleId: string) => {
-  return ROLES.find(r => r.id === roleId) || { label: roleId, color: "bg-slate-100 text-slate-700" };
-};
-
 export function StaffContent() {
   const { user, isAdmin, isSuperAdmin, setImpersonation, hasPermission } = useAuth();
+  const { assignableRoles, getRoleConfig } = useRoles();
   const canAccess = hasPermission('staff', isAdmin);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -422,7 +399,7 @@ export function StaffContent() {
                                     Tukar Peranan
                                   </DropdownMenuSubTrigger>
                                   <DropdownMenuSubContent>
-                                    {ROLES.filter(r => r.id !== 'superadmin').map((role) => (
+                                    {assignableRoles.filter(r => r.id !== 'superadmin').map((role) => (
                                       <DropdownMenuItem
                                         key={role.id}
                                         onClick={() => handleAction(s.id, "changeRole", role.id)}

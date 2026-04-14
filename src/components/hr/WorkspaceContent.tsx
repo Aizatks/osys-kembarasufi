@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { fetchAuth, fetchJsonAuth, fetchUploadAuth } from "@/lib/fetch-utils";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
@@ -102,9 +103,8 @@ export function WorkspaceContent() {
 
   const handleCreateWorkspace = async () => {
     try {
-      const res = await fetch("/api/workspaces", {
+      const res = await fetchJsonAuth("/api/workspaces", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           owner_staff_id: user?.id,
           ...newWorkspace
@@ -129,7 +129,7 @@ export function WorkspaceContent() {
           ? `/api/workspaces?manager_id=${user?.id}`
           : `/api/workspaces?owner_id=${user?.id}`;
       
-      const res = await fetch(url);
+      const res = await fetchAuth(url);
       if (res.ok) {
         const data = await res.json();
         setWorkspaces(data.workspaces || []);
@@ -181,9 +181,8 @@ export function WorkspaceContent() {
     }
 
     try {
-      const res = await fetch("/api/workspaces", {
+      const res = await fetchJsonAuth("/api/workspaces", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workspace_id: selectedWorkspaceId,
           ...newItem,
@@ -205,7 +204,7 @@ export function WorkspaceContent() {
   const handleDeleteItem = async (id: string) => {
     if (!confirm("Padam item ini?")) return;
     try {
-      const res = await fetch(`/api/workspaces?id=${id}`, { method: "DELETE" });
+      const res = await fetchAuth(`/api/workspaces?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Item dipadam");
         fetchWorkspaces();
@@ -218,9 +217,8 @@ export function WorkspaceContent() {
   const handleRenameFolder = async () => {
     if (!renameFolderData.newPath) return;
     try {
-      const res = await fetch("/api/workspaces", {
+      const res = await fetchJsonAuth("/api/workspaces", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workspace_id: renameFolderData.workspaceId,
           old_folder_path: renameFolderData.oldPath,
