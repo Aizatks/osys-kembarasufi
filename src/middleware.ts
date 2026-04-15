@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For API routes, check Authorization header
+  // For API routes, check Authorization header or session cookie
   if (pathname.startsWith('/api/')) {
     const authHeader = request.headers.get('authorization');
     const sessionCookie = request.cookies.get('session');
@@ -40,14 +40,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For page routes, check session cookie
-  const sessionCookie = request.cookies.get('session');
-  if (!sessionCookie) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
+  // For page routes, allow through — auth is handled client-side by AuthContext
+  // (session cookie may not be available in iframe/cross-origin contexts,
+  //  but JWT token in localStorage still works)
   return NextResponse.next();
 }
 
