@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, LayoutDashboard, Filter, BarChart2 } from "lucide-react";
+import { RefreshCw, LayoutDashboard, Filter, BarChart2, Package } from "lucide-react";
 import dynamic from "next/dynamic";
 import { DashboardStats } from "./DashboardStats";
 
@@ -55,6 +55,7 @@ interface DashboardData {
     recentSales: { id: string; nama_pakej: string; total: string; date_closed: string; status_bayaran: string; nama_wakil_peserta: string }[];
     overdueFollowUps: { id: string; nama_pakej: string; no_phone: string; date_follow_up: string; follow_up_status: string; staff_name?: string; staff_overdue_count?: number }[];
     upcomingTrips: { id: string; nama_pakej: string; tarikh_trip: string; tarikh_trip_iso: string | null; jumlah_pax: string; nama_wakil_peserta: string; no_phone?: string }[];
+    packagePerformance?: { name: string; pax: number; amount: number; count: number }[];
   };
   staff: { id: string; name: string; role: string }[];
 }
@@ -320,6 +321,43 @@ export function DashboardContent() {
                   <LeadsChart leadsBySource={data.charts.leadsBySource} />
                   <StaffChart staffStats={data.charts.staffStats} />
                 </div>
+
+                {/* Prestasi Pakej */}
+                {data.tables.packagePerformance && data.tables.packagePerformance.length > 0 && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Package className="h-5 w-5 text-blue-500" />
+                        <h3 className="font-semibold text-lg">Prestasi Pakej</h3>
+                      </div>
+                      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                        {data.tables.packagePerformance.map((pkg, idx) => {
+                          const maxPax = Math.max(...data.tables.packagePerformance!.map(p => p.pax));
+                          return (
+                            <div key={pkg.name} className="flex items-center gap-3">
+                              <span className="text-sm font-bold text-muted-foreground w-7 text-right">#{idx + 1}</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-sm font-medium truncate">{pkg.name}</span>
+                                  <div className="flex items-center gap-3 flex-shrink-0 ml-2 text-sm">
+                                    <span className="font-bold text-blue-600">{pkg.pax} Pax</span>
+                                    <span className="text-muted-foreground">RM {pkg.amount.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.min(100, (pkg.pax / (maxPax || 1)) * 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <div className="grid gap-4 lg:grid-cols-2">
                   <TopStaffTable data={data.tables.topStaff} />

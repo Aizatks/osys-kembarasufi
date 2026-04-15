@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { extractTokenFromHeader, verifyToken, isAdminRole } from '@/lib/auth';
 
 // Map nama bulan Malay/English → index bulan (0-based)
@@ -154,7 +154,18 @@ export async function GET(request: NextRequest) {
     const totalPax = sales.reduce((sum: number, s: Record<string, unknown>) => sum + (parseInt(s.jumlah_pax as string) || 0), 0);
     const totalLeads = leads.length;
     const closedLeads = leads.filter((l: Record<string, unknown>) => l.follow_up_status === 'Closed').length;
-    const conversionRate = totalLeads > 0 ? ((closedLeads / totalLeads) * 100).toFixed(1) : '0';
+    // Conversion rate: average closing rate per staff (more meaningful than global closedLeads/totalLeads)
+    const staffLeadCount: Record<string, { total: number; closed: number }> = {};
+    leads.forEach((l: Record<string, unknown>) => {
+      const sid = (l.staff_id as string) || '_none';
+      if (!staffLeadCount[sid]) staffLeadCount[sid] = { total: 0, closed: 0 };
+      staffLeadCount[sid].total += 1;
+      if (l.follow_up_status === 'Closed') staffLeadCount[sid].closed += 1;
+    });
+    const staffRates = Object.values(staffLeadCount).filter(s => s.total > 0 && s.closed > 0);
+    const conversionRate = staffRates.length > 0
+      ? (staffRates.reduce((sum, s) => sum + (s.closed / s.total) * 100, 0) / staffRates.length).toFixed(1)
+      : (totalLeads > 0 ? ((closedLeads / totalLeads) * 100).toFixed(1) : '0');
     // Lead baru — kira lead yang masuk dalam 7 hari terakhir dari date range yang dipilih
     const filterEndDate = filterEnd ? new Date(filterEnd + 'T23:59:59') : now;
     const weekBeforeEnd = new Date(filterEndDate);
@@ -322,6 +333,17 @@ export async function GET(request: NextRequest) {
         };
       });
 
+    // Package performance — aggregate sales by package
+    const pkgPerf: Record<string, { name: string; pax: number; amount: number; count: number }> = {};
+    sales.forEach((s: Record<string, unknown>) => {
+      const pkg = (s.nama_pakej as string) || 'Lain-lain';
+      if (!pkgPerf[pkg]) pkgPerf[pkg] = { name: pkg, pax: 0, amount: 0, count: 0 };
+      pkgPerf[pkg].pax += parseInt(s.jumlah_pax as string) || 0;
+      pkgPerf[pkg].amount += parseFloat(s.total as string) || 0;
+      pkgPerf[pkg].count += 1;
+    });
+    const packagePerformance = Object.values(pkgPerf).sort((a, b) => b.pax - a.pax);
+
     return NextResponse.json({
       summary: {
         totalSales,
@@ -332,7 +354,7 @@ export async function GET(request: NextRequest) {
         newLeadsThisWeek,
       },
       charts: { salesTrend, leadsBySource, paymentBreakdown, staffStats },
-      tables: { topStaff, recentSales, overdueFollowUps, upcomingTrips },
+      tables: { topStaff, recentSales, overdueFollowUps, upcomingTrips, packagePerformance },
       staff,
     });
   } catch (error) {

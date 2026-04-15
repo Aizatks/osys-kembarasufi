@@ -39,6 +39,7 @@ import { PersonalChatView } from "./whatsapp/PersonalChatView";
 import { AgentOrders } from "./agent/AgentOrders";
 import { AgentReports } from "./agent/AgentReports";
 import { ExportRequestsContent } from "./ExportRequestsContent";
+import { WaitingListContent } from "./WaitingListContent";
 import { 
   Activity, 
 
@@ -370,6 +371,7 @@ export function MainLayout({ children }: Props) {
                       {activeView === "agent-orders" && <AgentOrders />}
                         {activeView === "agent-reports" && <AgentReports />}
                         {activeView === "export-requests" && <ExportRequestsContent />}
+                        {activeView === "waiting-list" && <WaitingListContent />}
 
                 </div>
 

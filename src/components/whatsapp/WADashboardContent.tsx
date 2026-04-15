@@ -18,13 +18,33 @@ import {
   CheckCircle2,
   Wifi,
   WifiOff,
+  Trash2,
+  Database,
+  Loader2,
+  HardDrive,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { waUrl } from "@/lib/wa-client";
+import { toast } from "sonner";
+
 
 interface StaffMetric {
   staff_id: string;
@@ -67,15 +87,35 @@ interface DashboardData {
   peak_hour: HourlyPattern;
 }
 
+interface CleanupStats {
+  messages: {
+    total: number;
+    older_than_1_month: number;
+    older_than_2_months: number;
+    older_than_3_months: number;
+    estimated_size_mb: number;
+  };
+  contacts: {
+    total: number;
+    estimated_size_mb: number;
+  };
+}
+
 export function WADashboardContent() {
-  const { token } = useAuth();
+  const { token, isSuperAdmin } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cleanupStats, setCleanupStats] = useState<CleanupStats | null>(null);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
+  const [cleanupAction, setCleanupAction] = useState<string>("clean_all");
+  const [monthsToKeep, setMonthsToKeep] = useState("1");
+  const [cleanupRunning, setCleanupRunning] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch(waUrl("/api/whatsapp/dashboard"), {
+      const res = await fetch("/api/whatsapp/dashboard", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -88,11 +128,54 @@ export function WADashboardContent() {
     }
   }, [token]);
 
+  const fetchCleanupStats = useCallback(async () => {
+    if (!token) return;
+    setCleanupLoading(true);
+    try {
+      const res = await fetch("/api/whatsapp/cleanup", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setCleanupStats(await res.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCleanupLoading(false);
+    }
+  }, [token]);
+
+  const runCleanup = async () => {
+    if (!token) return;
+    setCleanupRunning(true);
+    try {
+      const res = await fetch("/api/whatsapp/cleanup", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: cleanupAction, months_to_keep: parseInt(monthsToKeep) }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        toast.success(result.message);
+        setCleanupDialogOpen(false);
+        fetchCleanupStats();
+      } else {
+        toast.error(result.error || "Gagal membersihkan data");
+      }
+    } catch {
+      toast.error("Ralat rangkaian");
+    } finally {
+      setCleanupRunning(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  useEffect(() => {
+    if (isSuperAdmin) fetchCleanupStats();
+  }, [isSuperAdmin, fetchCleanupStats]);
 
   const formatResponseTime = (ms: number) => {
     if (ms === 0) return "N/A";
@@ -503,6 +586,152 @@ export function WADashboardContent() {
           </CardContent>
         </Card>
       )}
+
+      {/* Storage Cleanup — SuperAdmin only */}
+      {isSuperAdmin && cleanupStats && (
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-red-500" />
+              Storage & Pembersihan Data
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <MessageSquare className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-medium">Mesej</span>
+                </div>
+                <p className="text-2xl font-bold">{cleanupStats.messages.total.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">~{cleanupStats.messages.estimated_size_mb} MB</p>
+              </div>
+              <div className="bg-violet-50 dark:bg-violet-950/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="w-4 h-4 text-violet-500" />
+                  <span className="text-sm font-medium">Contacts</span>
+                </div>
+                <p className="text-2xl font-bold">{cleanupStats.contacts.total.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">~{cleanupStats.contacts.estimated_size_mb} MB</p>
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-medium">Lebih 1 Bulan</span>
+                </div>
+                <p className="text-2xl font-bold text-amber-600">{cleanupStats.messages.older_than_1_month.toLocaleString()}</p>
+                <p className="text-xs text-amber-600/70 mt-1">mesej boleh dipadam</p>
+              </div>
+              <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Database className="w-4 h-4 text-red-500" />
+                  <span className="text-sm font-medium text-red-700 dark:text-red-400">Jumlah Storage</span>
+                </div>
+                <p className="text-2xl font-bold text-red-600">~{(cleanupStats.messages.estimated_size_mb + cleanupStats.contacts.estimated_size_mb).toFixed(1)} MB</p>
+                <p className="text-xs text-red-600/70 mt-1">mesej + contacts</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="destructive"
+                className="gap-2"
+                onClick={() => setCleanupDialogOpen(true)}
+              >
+                <Trash2 className="w-4 h-4" /> Bersihkan Data Lama
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={fetchCleanupStats}
+                disabled={cleanupLoading}
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", cleanupLoading && "animate-spin")} /> Refresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Cleanup Confirmation Dialog */}
+      <Dialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" /> Bersihkan Data WhatsApp
+            </DialogTitle>
+            <DialogDescription>
+              Data yang dipadam tidak boleh dikembalikan. Pastikan anda pasti sebelum meneruskan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Jenis Pembersihan</label>
+              <Select value={cleanupAction} onValueChange={setCleanupAction}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="clean_all">Mesej + Contacts Lama</SelectItem>
+                  <SelectItem value="clean_messages">Mesej Lama Sahaja</SelectItem>
+                  <SelectItem value="clean_contacts">Contacts Tidak Aktif Sahaja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Simpan Data Terkini</label>
+              <Select value={monthsToKeep} onValueChange={setMonthsToKeep}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 bulan terakhir sahaja</SelectItem>
+                  <SelectItem value="2">2 bulan terakhir</SelectItem>
+                  <SelectItem value="3">3 bulan terakhir</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {cleanupStats && (
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 space-y-1.5">
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Anggaran yang akan dipadam:</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Mesej lebih {monthsToKeep} bulan:</span>
+                  <span className="font-semibold text-red-600">
+                    {monthsToKeep === "1" ? cleanupStats.messages.older_than_1_month.toLocaleString()
+                      : monthsToKeep === "2" ? cleanupStats.messages.older_than_2_months.toLocaleString()
+                      : cleanupStats.messages.older_than_3_months.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Contacts tidak aktif:</span>
+                  <span className="font-semibold text-red-600">akan dikira semasa proses</span>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                <AlertTriangle className="w-4 h-4 inline mr-1" />
+                Semua mesej dan contacts yang lebih lama dari <strong>{monthsToKeep} bulan</strong> akan dipadam secara kekal.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCleanupDialogOpen(false)}>Batal</Button>
+            <Button
+              variant="destructive"
+              onClick={runCleanup}
+              disabled={cleanupRunning}
+              className="gap-2"
+            >
+              {cleanupRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              {cleanupRunning ? "Membersihkan..." : "Ya, Padam Sekarang"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

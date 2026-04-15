@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Phone, Target, UserCheck, Upload, Download, Calendar, FileSpreadsheet, FileText, AlertTriangle, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Search, X, ScanSearch, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Phone, Target, UserCheck, Upload, Download, Calendar, FileSpreadsheet, FileText, AlertTriangle, Filter, ChevronUp, ChevronDown, ChevronsUpDown, Search, X, ScanSearch, Eye, EyeOff, Clock, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -134,7 +134,15 @@ const MONTHS = [
 ];
 
 const LEAD_FROM_OPTIONS = ["ADS", "ADS FB", "ADS TIKTOK", "ADS TIKTOK LIVE", "PS", "REFERRAL", "WEBSITE", "WHATSAPP", "WALK-IN", "HAIKAL", "LAIN-LAIN"];
-const FOLLOW_UP_STATUS = ["Pending", "Fu 1", "Fu 2", "Fu 3", "Fu 4", "Fu 5", "Closed", "Not Interested"];
+const FOLLOW_UP_STATUS = ["Pending", "Fu 1", "Fu 2", "Fu 3", "Fu 4", "Fu 5", "Closed", "Not Interested", "Waiting List"];
+
+function formatWhatsAppUrl(phone: string): string {
+  if (!phone) return "";
+  let cleaned = phone.replace(/[\s\-\(\)\+]/g, "");
+  if (cleaned.startsWith("0")) cleaned = "60" + cleaned.slice(1);
+  if (!cleaned.startsWith("60")) cleaned = "60" + cleaned;
+  return `https://wa.me/${cleaned}`;
+}
 
 function getDefaultDateRange() {
   const now = new Date();
@@ -1329,7 +1337,20 @@ const handleBulkDelete = async () => {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{report.no_phone || "-"}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {report.no_phone ? (
+                            <a
+                              href={formatWhatsAppUrl(report.no_phone)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-green-700 bg-green-50 hover:bg-green-100 transition-colors font-medium"
+                              title="Buka WhatsApp"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              {report.no_phone}
+                            </a>
+                          ) : "-"}
+                        </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                             {report.lead_from}
@@ -1437,6 +1458,7 @@ const handleBulkDelete = async () => {
             )}
           </CardContent>
         </Card>
+
       </div>
     );
   }

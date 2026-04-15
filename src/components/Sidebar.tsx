@@ -81,7 +81,8 @@ import {
     | "whatsapp-chat"
   | "agent-orders"
     | "agent-reports"
-    | "export-requests";
+    | "export-requests"
+    | "waiting-list";
 
 interface SidebarProps {
   activeView: ActiveView;
@@ -92,7 +93,7 @@ interface SidebarProps {
 
 export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChange }: SidebarProps) {
     const { user, logout, isSales, isAdmin, isMarketing, isSuperAdmin, isAgent, isStaff, isFinance, isHR, isMedia } = useAuth();
-    const [isLaporanOpen, setIsLaporanOpen] = useState(activeView.startsWith("dashboard") || activeView === "marketing-report" || activeView === "quotations");
+    const [isLaporanOpen, setIsLaporanOpen] = useState(activeView.startsWith("dashboard") || activeView === "marketing-report" || activeView === "quotations" || activeView === "waiting-list");
     const [isTaskOpen, setIsTaskOpen] = useState(activeView.startsWith("task"));
     const [isHROpen, setIsHROpen] = useState(activeView.startsWith("hr"));
     const [isOperationsOpen, setIsOperationsOpen] = useState(activeView === "operations-roster" || activeView === "trip-dates" || activeView === "calendar" || activeView === "package-pricing");
@@ -220,6 +221,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
   const canSeeWAMonitoring = hasPermission("whatsapp-monitoring", isAdmin);
   const canSeeWAConnections = hasPermission("whatsapp-connections", isSuperAdmin);
   const canSeeWADashboard = hasPermission("whatsapp-dashboard", isAdmin);
+  const canSeeWaitingList = hasPermission("waiting-list", isAdmin || isSales || user?.role === 'tour-coordinator' || user?.role === 'tour-coordinator-manager');
 
   const handleViewChange = (view: ActiveView) => {
     onViewChange(view);
@@ -388,6 +390,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, onCollapsedChan
                             {canSeeSalesReports && <SubMenuItem view="dashboard-sales" icon={TrendingUp} label="Sales Report" colorClass="amber" />}
                               {canSeeLeadReport && <SubMenuItem view="dashboard-leads" icon={Users} label="Lead Report" colorClass="blue" />}
                               {canSeeQuotations && <SubMenuItem view="quotations" icon={BarChart3} label="Sebut Harga" colorClass="amber" />}
+                              {canSeeWaitingList && <SubMenuItem view="waiting-list" icon={Clock} label="Waiting List" colorClass="amber" />}
                               {isAdmin && <SubMenuItem view="export-requests" icon={Download} label="Permohonan Export" colorClass="violet" />}
                             </div>
 

@@ -239,16 +239,19 @@ export function MarketingReport({ dateFrom, dateTo }: { dateFrom?: string; dateT
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {packageReport.slice(0, 5).map((pkg, idx) => (
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                  {[...packageReport].sort((a, b) => b.pax - a.pax).map((pkg, idx) => (
                     <div key={pkg.name} className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="truncate max-w-[200px]">{pkg.name}</span>
-                        <span className="font-bold">{pkg.pax} Pax</span>
+                        <span className="truncate max-w-[200px]">
+                          <span className="text-slate-500 mr-1.5">#{idx + 1}</span>
+                          {pkg.name}
+                        </span>
+                        <span className="font-bold flex-shrink-0 ml-2">{pkg.pax} Pax</span>
                       </div>
                         <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-500" 
+                          <div
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-500"
                             style={{ width: `${Math.min(100, (pkg.pax / (Math.max(...packageReport.map(p => p.pax)) || 1)) * 100)}%` }}
                           />
                         </div>

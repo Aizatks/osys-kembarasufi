@@ -47,6 +47,7 @@ const VIEWS = [
   { id: "whatsapp-rotator", label: "WhatsApp Rotator" },
   { id: "whatsapp-blasting", label: "WhatsApp Blasting" },
   { id: "whatsapp-monitoring", label: "WhatsApp Monitoring" },
+  { id: "waiting-list", label: "Waiting List" },
 ];
 
 const COLOR_OPTIONS = [
